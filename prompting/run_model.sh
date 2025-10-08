@@ -14,7 +14,10 @@ export DEFAULT_PARTITION="RTX6000,V100-32GB,V100-16GB,H100,A100-40GB,A100-80GB,A
 export DEV_JOB_NAME=devjob
 export DEV_PARTITION="RTX6000,V100-32GB,V100-16GB" #A100-80GB
 
-export IMAGE=$ENROOT_IMAGE_DIR/factuality_eval_2025_10_08.sqsh
+export ENROOT_IMAGE_DIR=/netscratch/abu/images
+export IMAGE=$ENROOT_IMAGE_DIR/table_eval_updated_2025_02_14.sqsh
+# Weights & Biases
+export WANDB_PROJECT=$PROJECT
 
 # === Model + Dataset parameters ===
 MODEL_NAME=${MODEL_NAME:-"meta-llama/Meta-Llama-3.1-8B-Instruct"}
