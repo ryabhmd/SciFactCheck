@@ -1,11 +1,11 @@
+"""
+Script to crawl IEP (https://iep.utm.edu/) to gather entities from articles to represent the Arts and Humanities field.
+"""
+
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import time
-
-"""
-Script to crawl IEP (https://iep.utm.edu/) to gather entities from articles to represent the Arts and Humanities field.
-"""
 
 IEP_INFO = {
     "history_of_philosophy": {

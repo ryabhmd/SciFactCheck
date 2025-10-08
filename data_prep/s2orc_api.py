@@ -1,3 +1,10 @@
+"""
+Script that retrieves survey/review papers from the S2ORC API per available field. 
+We then cluster results into one of five main fields: Engineering, Life Sciences, Physical Sciences and Mathematics, Social and Behavioural Sciences, Arts and Humanities.
+Results are then filtered per field to include those with the an existing abstract and an accessible full-text PDF. 
+Gemini is then used to get the main scientific entity per paper, which are saved to be reviewed manually.
+"""
+
 import requests
 import os
 import json
@@ -6,13 +13,6 @@ import pandas as pd
 
 from google import genai
 from tqdm import tqdm 
-
-"""
-Script that retrieves survey/review papers from the S2ORC API per available field. 
-We then cluster results into one of five main fields: Engineering, Life Sciences, Physical Sciences and Mathematics, Social and Behavioural Sciences, Arts and Humanities.
-Results are then filtered per field to include those with the an existing abstract and an accessible full-text PDF. 
-Gemini is then used to get the main scientific entity per paper, which are saved to be reviewed manually.
-"""
 
 # Existing s2orc fields to extract surveys from
 s2orc_fields = ['Materials Science', 'Engineering', 'Medicine', 'Biology', 'Agricultural and Food Sciences', 'Computer Science', 'Chemistry', 'Physics', 'Geology', 'Mathematics', 'Environmental Science', 'Psychology',

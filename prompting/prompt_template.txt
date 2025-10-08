@@ -1,0 +1,1 @@
+In one paragraph, tell me about {scientific_entity} in the context of {field}. If you use external citations of research papers, list them clearly in JSON format under "Citations:".
