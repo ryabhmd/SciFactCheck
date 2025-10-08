@@ -56,8 +56,6 @@ CMD="python run_model.py \
   --dataset_name \"$DATASET_NAME\" \
   --prompt_template \"$PROMPT_TEMPLATE\" \
   --output_dir \"$OUTPUT_DIR\" \
-  --hf_api_key \"$HF_API_KEY\" \
-  --litellm_api_key \"$LITELLM_API_KEY\" \
   --max_new_tokens $MAX_NEW_TOKENS"
 
 # Optional limit argument
