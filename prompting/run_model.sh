@@ -6,6 +6,8 @@
 
 # === Project config ===
 
+export BASE_DIR="/netscratch/$USER/SciFactCheck/SciFactCheck"
+
 export PROJECT="factuality-eval/SciFactCheck"
 export CUDA_DEVICE_ORDER="PCI_BUS_ID"
 
@@ -23,7 +25,7 @@ export WANDB_PROJECT=$PROJECT
 MODEL_NAME=${MODEL_NAME:-"meta-llama/Meta-Llama-3.1-8B-Instruct"}
 MODEL_TYPE=${MODEL_TYPE:-"hf"}
 DATASET_NAME=${DATASET_NAME:-"rabuahmad/scifactcheck"}
-PROMPT_TEMPLATE=${PROMPT_TEMPLATE:-"${BASE_DIR}/prompt_template.txt"}
+PROMPT_TEMPLATE=${PROMPT_TEMPLATE:-"${BASE_DIR}/prompting/prompt_template.txt"}
 OUTPUT_DIR=${OUTPUT_DIR:-"${BASE_DIR}/results"}
 MAX_NEW_TOKENS=${MAX_NEW_TOKENS:-512}
 LIMIT=${LIMIT:-0}  # 0 means no limit
