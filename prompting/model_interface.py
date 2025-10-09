@@ -42,7 +42,7 @@ class BaseModelInterface(ABC):
 class HFModel(BaseModelInterface):
     """Local HuggingFace model with detailed logprobs."""
 
-    def __init__(self, model_id: str, api_key: Optional[str] = None, seed: int = 0):
+    def __init__(self, model_id: str, api_key: Optional[str] = None, seed: int = 0, force_download: Optional[bool] = True):
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         self.model_id = model_id
@@ -54,6 +54,7 @@ class HFModel(BaseModelInterface):
             use_auth_token=self.api_key,
             torch_dtype=torch.bfloat16,
             device_map="auto",
+            force_download=force_download
         )
         self.device = self.model.device
         logging.info(f"Loaded HuggingFace model: {model_id} on {self.device}")

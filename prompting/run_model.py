@@ -4,6 +4,7 @@ import argparse
 from datasets import load_dataset
 from model_interface import HFModel, LiteLLMModel
 from dotenv import load_dotenv
+from tqdm import tqdm 
 
 load_dotenv()
 
@@ -27,15 +28,15 @@ def main():
         template = f.read().strip()
 
     # -----------Load dataset from HF Hub------------
-    print(f"Loading dataset {args.dataset_name} [{args.split}] from HuggingFace Hub...")
-    dataset = load_dataset(args.dataset_name, split=args.split, use_auth_token=args.hf_api_key)
+    print(f"Loading dataset {args.dataset_name} from HuggingFace Hub...")
+    dataset = load_dataset(args.dataset_name, token=args.hf_api_key)
     if args.limit:
         dataset = dataset.select(range(args.limit))
     print(f"Loaded {len(dataset)} samples.")
 
     # -----------Initialize model------------
     if args.model_type == "hf":
-        model = HFModel(args.model_name, api_key=args.hf_api_key)
+        model = HFModel(args.model_name, api_key=args.hf_api_key, force_download=True)
     else:
         model = LiteLLMModel(args.model_name, api_key=args.litellm_api_key)
 
@@ -46,7 +47,7 @@ def main():
     fout = open(output_path, "w")
 
     # ----------Run generation loop-------------
-    for i, row in enumerate(dataset):
+    for i, row in enumerate(tqdm(dataset['train'], desc="Prompting entities")):
         entity = row.get("scientific_entity")
         field = row.get("field")
 
