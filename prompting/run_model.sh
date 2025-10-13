@@ -19,7 +19,7 @@ export IMAGE=$ENROOT_IMAGE_DIR/scifactcheck.sqsh
 export WANDB_PROJECT=$PROJECT
 
 # === Model + Dataset parameters ===
-MODEL_NAME=${MODEL_NAME:-"facebook/galactica-6.7b"}
+MODEL_NAME=${MODEL_NAME:-"meta-llama/Llama-3.1-8B-Instruct"}
 MODEL_TYPE=${MODEL_TYPE:-hf}
 DATASET_NAME=${DATASET_NAME:-"rabuahmad/scifactcheck"}
 PROMPT_TEMPLATE=${PROMPT_TEMPLATE:-"${BASE_DIR}/prompt_template.txt"}

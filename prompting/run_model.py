@@ -5,6 +5,7 @@ from datasets import load_dataset
 from model_interface import HFModel, LiteLLMModel
 from dotenv import load_dotenv
 from tqdm import tqdm 
+from string import Template
 
 load_dotenv()
 
@@ -25,7 +26,8 @@ def main():
 
     # -----------Load prompt template------------
     with open(args.prompt_template, "r") as f:
-        template = f.read().strip()
+        template_text = f.read().strip()
+    template = Template(template_text)
 
     # -----------Load dataset from HF Hub------------
     print(f"Loading dataset {args.dataset_name} from HuggingFace Hub...")
@@ -51,11 +53,12 @@ def main():
         entity = row.get("scientific_entity")
         field = row.get("field")
 
-        prompt = template.format(scientific_entity=entity, field=field)
+        prompt = template.substitute(scientific_entity=entity, field=field)
 
         result = model.generate(prompt, max_new_tokens=args.max_new_tokens)
         record = {
             "id": i,
+            "field": field,
             "entity": entity,
             "prompt": prompt,
             "output": result,
