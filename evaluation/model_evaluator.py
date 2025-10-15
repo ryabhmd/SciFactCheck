@@ -11,6 +11,8 @@ from statistics import mean, stdev
 from dotenv import load_dotenv
 from tqdm import tqdm
 
+from certainty_estimator.predict_certainty import CertaintyEstimator
+
 class ModelEvaluator:
     """
     Handles loading model outputs and running evaluation methods directly on nested dict data.
@@ -45,6 +47,7 @@ class ModelEvaluator:
 
     # -------------------- Evaluation methods: OVR --------------------
 
+    # ---- logprobs ----
     def eval_logprobs(self):
         """
         Collect length-normalized logprobs grouped by field.
@@ -84,6 +87,109 @@ class ModelEvaluator:
             print(f"{i:2d}. {r['field']:35s} | mean = {r['mean']:.6f}")
         return ranked
     
+    # ---- linguistic uncertainty ---- ** Running CertaintyEstimator works best with transformers==4.40.2 ** 
+    def aspect_level_uncertainty_score(aspect_dict):
+        """
+        Score per aspect type in percentage: high = certain.
+        The percentage means how many sentences in the LLM output are predicted as certain for the aspect.
+        """
+        
+        aspects = ['Probability', 'Number', 'Extent', 'Condition', 'Framing', 'Suggestion']
+        aspect_scores = {}
+        
+        for aspect in aspects:
+            if aspect_dict[aspect]:
+                results = 0
+                for certainty in aspect_dict[aspect]:
+                    if certainty == 'Certain':
+                        results += 1
+                aspect_scores[aspect] = results/len(aspect_dict[aspect])
+            else:
+                aspect_scores[aspect] = None
+        
+        return aspect_scores
+
+    def get_uncertainty_estimations(text: str):
+        """
+        Given a text (output from LLM), the function:
+        1. Removes citations from text 
+        2. Strips it to sentences
+        3. Predicts the sentence-level certainty of each sentence (scale of 1-6)
+        4. Predicts the aspect-level certainty of each sentence (binary: certain/uncertain over six possible aspects: number, extent, probability, condition, framing, and suggestion)
+
+        Returns
+        1. mean of sentence-level certainty of the text (scale of 1-6, higher is more certain)
+        2. percentage of certain sentences for each aspect (scale of 0-1, higher is more certain)
+        """
+        
+        pattern = r'\{\s*"citations"\s*:\s*\[.*?\]\s*\}'
+        match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+        
+        if match:
+            text = text[:match.start()]
+            
+        sentences = text.split('.')
+        sentences = [sentence.strip() for sentence in sentences]
+        sentences = [sentence for sentence in sentences if sentence != '']
+        
+        aspect_dict = defaultdict(list)
+        
+        # sentence-level certainty prediction
+        sentence_level_estimator = CertaintyEstimator('sentence-level')
+        sentence_level_certainty = sentence_level_estimator.predict(sentences,tqdm=tqdm)
+        mean_sentence_certainty = mean(sentence_level_certainty)
+        
+        # aspect-level certainty prediction
+        aspect_level_estimator = CertaintyEstimator('aspect-level')
+        aspect_level_certainty = aspect_level_estimator.predict(sentences,tqdm=tqdm)
+        
+        for sentence_result in aspect_level_certainty:
+            for result in sentence_result:
+                aspect, certainty = result[0], result[1]
+                aspect_dict[aspect].append(certainty)
+                
+        aspect_scores = self.aspect_level_uncertainty_score(aspect_dict)
+        
+        return mean_sentence_certainty, aspect_scores
+    
+
+    def collect_certainty_by_field(data):
+        """
+        Collects uncertainty results (both sentence-level and aspect-level) per sample in data. 
+        Returns two dictionaries:
+        1. sentence-level certainty results per field
+        2. aspect-level certainty results per field
+        """
+        
+        field_sentence_certainty = defaultdict(list)
+        field_aspect_certainty = defaultdict(list)
+        
+        for record in tqdm(data, desc="Processing outputs"):
+            text = record["output"]["text"]
+            field = record["field"]
+            mean_sentence_certainty, aspect_scores = self.get_uncertainty_estimations(text)
+            if field and mean_sentence_certainty and aspect_scores is not None:
+                field_sentence_certainty[field].append(mean_sentence_certainty)
+                field_aspect_certainty[field].append(aspect_scores)
+                
+        # Print summaries
+        print("=== mean sentence certainty summary by field ===")
+        for field, values in field_sentence_certainty.items():
+            print(f"{field:20s} | {len(values):3d} samples | mean = {mean(values):.8f}")
+            
+        print("=== mean aspect certainty summary by field ===") # for each field, go over the aspect_level_uncertainty per each aspect and get the mean
+        for field, values in field_aspect_certainty.items():
+            field_specific_dict = defaultdict(list)
+            for value in values:
+                for aspect, score in value.items():
+                    field_specific_dict[aspect].append(score)
+                    
+            for aspect, values in field_specific_dict.items():
+                print(f"{field:20s} | {aspect:20s} | {len(values):3d} samples | mean = {mean(values):.8f}")
+                
+        return dict(field_sentence_certainty), dict(field_aspect_certainty)
+
+
     # -------------------- Evaluation methods: ATTR -------------------- 
     # Code adapted from https://github.com/AbhilashaRavichander/HALoGEN/blob/main/src/scientific_attribution.py 
 
