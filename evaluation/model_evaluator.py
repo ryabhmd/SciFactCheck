@@ -1,0 +1,225 @@
+import json
+import os
+import requests
+import re
+import time
+import string
+
+import pandas as pd
+from collections import defaultdict
+from statistics import mean, stdev
+from dotenv import load_dotenv
+from tqdm import tqdm
+
+class ModelEvaluator:
+    """
+    Handles loading model outputs and running evaluation methods directly on nested dict data.
+    """
+
+    def __init__(self, model_name: str, data=None, file_path=None):
+        """
+        Initialize evaluator for a given model.
+        Provide either a list of dicts (`data`) or a JSONL `file_path`.
+        """
+        self.model_name = model_name
+
+        if data is not None:
+            self.data = data
+        elif file_path is not None:
+            self.data = self._read_jsonl(file_path)
+        else:
+            raise ValueError("Provide either `data` or `file_path`.")
+
+        print(f"Loaded {len(self.data)} records for model {self.model_name}")
+        self.results = {}
+
+    @staticmethod
+    def _read_jsonl(path):
+        """Helper to read JSONL file into a list of dicts."""
+        data = []
+        with open(path, "r") as f:
+            for line in f:
+                if line.strip():
+                    data.append(json.loads(line))
+        return data
+
+    # -------------------- Evaluation methods: OVR --------------------
+
+    def eval_logprobs(self):
+        """
+        Collect length-normalized logprobs grouped by field.
+        """
+        field_logprobs = defaultdict(list)
+
+        for record in self.data:
+            field = record["field"]
+            logprob = record["output"]["length_norm_logprob"]
+            if field and logprob is not None:
+                field_logprobs[field].append(logprob)
+
+        summary = []
+        for field, values in field_logprobs.items():
+            summary.append({
+                "field": field,
+                "count": len(values),
+                "mean": mean(values),
+                "std": stdev(values) if len(values) > 1 else 0.0,
+            })
+
+        self.results["logprob_summary"] = summary
+        print("Logprob summary:")
+        for s in summary:
+            print(f"{s['field']:35s} | {s['count']:4d} samples | mean = {s['mean']:.6f}")
+        return summary
+
+    def compare_fields(self):
+        """Rank fields by mean logprob (confidence)."""
+        if "logprob_summary" not in self.results:
+            self.eval_logprobs()
+        ranked = sorted(
+            self.results["logprob_summary"], key=lambda x: x["mean"], reverse=True
+        )
+        print("Field ranking by confidence:")
+        for i, r in enumerate(ranked, start=1):
+            print(f"{i:2d}. {r['field']:35s} | mean = {r['mean']:.6f}")
+        return ranked
+    
+    # -------------------- Evaluation methods: ATTR -------------------- 
+    # Code adapted from https://github.com/AbhilashaRavichander/HALoGEN/blob/main/src/scientific_attribution.py 
+
+    def _query_semantic_scholar(title):
+       """
+       Query the Semantic Scholar API for a given title.
+       Args:
+       - title (str): The title to query.
+       
+       Returns:
+       - str: The title of the paper returned by the API, or an empty string if not found.
+       """
+       base_url = "https://api.semanticscholar.org/graph/v1/paper/"
+       
+       if not title or not isinstance(title, str):
+          return None
+       
+       query_title = '+'.join(title.split())
+       url = f"{base_url}search?query={query_title}&fields=url"
+       
+       time.sleep(1)  # Delay to avoid hitting rate limits
+       response = requests.get(url)
+       
+       if response.status_code == 200:
+          title_search_results = response.json()
+          if 'data' in title_search_results and title_search_results['data']:
+             paper_id = title_search_results['data'][0]['paperId']
+             paper_url = f"{base_url}{paper_id}"
+             
+             retry_count = 0
+             while retry_count < 3:
+                 paper_response = requests.get(paper_url)
+                 if paper_response.status_code == 200:
+                     data = paper_response.json()
+                     return data.get('title', '')
+                 
+                 elif paper_response.status_code == 429:
+                    retry_count += 1
+                    time.sleep(5)
+                
+                 else:
+                     return ''
+    
+       return ''
+    
+    def extract_citations(llm_output: str):
+        """
+        Extracts the citations JSON block from an LLM output formatted according to the prompt template.
+        **Note: if the JSON is not well-structured and cannot be read, the function will return None, and the sample will not be included in the evaluation.
+
+        Args:
+        llm_output (str): The model output that includes a JSON block of citations.
+        Returns:
+        list[dict] | None: The list of citations if correctly formatted, otherwise None.
+        """
+        # Match a JSON block starting with {"citations": [...]}
+        match = re.search(r'\{\s*"citations"\s*:\s*\[.*?\]\s*\}', llm_output, re.DOTALL | re.IGNORECASE)
+        
+        if not match:
+            return None
+        
+        json_str = match.group(0)
+        
+        try:
+            parsed = json.loads(json_str)
+            citations = parsed.get("citations", None)
+            
+            # Return only if it's a list
+            if isinstance(citations, list):
+                return citations
+            else:
+                return None
+            
+        except json.JSONDecodeError as e:
+            print("Error parsing citations JSON:", e)
+            return None
+        
+    def _clean_text(text):
+        
+        if not isinstance(text, str) or text is None:
+            return ""
+        return text.translate(str.maketrans('', '', string.punctuation)).strip().lower()
+    
+    def process_attribution_hallucinations(llm_output):
+        """
+        Given an output from an LLM, the function:
+        1. extracts citations
+        2. goes through them and for each one queries S2ORC based on title and saves the results
+        3. checks if the citation from the LLM matches the one returned by S2ORC after cleaning
+        
+        Returns:
+        - score: the number of hallucinated citations divided by the overall number of citations given by the LLM (percentage)
+        """
+        
+        citations = self.extract_citations(llm_output)
+        if citations is None or len(citations) == 0:
+            return None
+        
+        hallucinated_citations = 0
+        
+        for citation in tqdm(citations, desc="Verifying citations against S2ORC"):
+            s2orc_title = self.self_query_semantic_scholar(title=citation['title'])
+            if self._clean_text(citation['title']) != self._clean_text(s2orc_title):
+                hallucinated_citations += 1      
+                
+        score = hallucinated_citations / len(citations) * 100
+        return score
+    
+    def collect_attr_by_field(data):
+        """
+        Goes over data samples (i.e. LLM outputs) and generates report of attribution hallucination score per field. 
+        """
+        field_attr = defaultdict(list)
+        
+        for record in tqdm(data, desc="Processing outputs"):
+            text = record["output"]["text"]
+            field = record["field"]
+            attr_score = self.process_attribution_hallucinations(text)
+            if field and attr_score is not None:
+                field_attr[field].append(attr_score)
+                
+        # Print summary
+        print("=== ATTR-score summary by field ===")
+        for field, values in field_attr.items():
+            print(f"{field:20s} | {len(values):3d} samples | mean = {mean(values):.8f}")
+            
+        return dict(field_attr)
+
+    # -------------------- Save / export --------------------
+
+    def save_results(self, out_path):
+        """Save evaluation summaries to a structured JSON file."""
+        to_save = {
+            "model": self.model_name,
+            "results": self.results,
+        }
+        with open(out_path, "w") as f:
+            json.dump(to_save, f, indent=2)
+        print(f"💾 Saved evaluation results for {self.model_name} to {out_path}")
