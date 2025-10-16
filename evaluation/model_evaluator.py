@@ -1,3 +1,27 @@
+"""
+Core evaluation class for analyzing LLM-generated scientific outputs.
+
+This module defines the `ModelEvaluator` class, which provides low-level
+functions to analyze a model's outputs at both sample and aggregate levels.
+It directly operates on nested dictionary data.
+
+Main functionalities based on factuality hallucination type:
+
+1. OVR 
+-- Logprob evaluation: compute and summarize model confidence by field.
+-- Linguistic uncertainty estimation: quantify certainty in generated text using a pretrained `CertaintyEstimator` model.
+
+2. ATTR: check if cited papers are valid using the Semantic Scholar API.
+
+
+- Utility methods for reading, saving, and aggregating results.
+
+Notes:
+- This file focuses on the evaluation *logic*, not orchestration.
+- For running and combining multiple evaluations, see `evaluation_runner.py`.
+"""
+
+
 import json
 import os
 import requests
@@ -171,8 +195,9 @@ class ModelEvaluator:
             if field and mean_sentence_certainty and aspect_scores is not None:
                 field_sentence_certainty[field].append(mean_sentence_certainty)
                 field_aspect_certainty[field].append(aspect_scores)
+
+        return dict(field_sentence_certainty), dict(field_aspect_certainty)
                 
-        # Print summaries
         print("=== mean sentence certainty summary by field ===")
         for field, values in field_sentence_certainty.items():
             print(f"{field:20s} | {len(values):3d} samples | mean = {mean(values):.8f}")
@@ -187,7 +212,7 @@ class ModelEvaluator:
             for aspect, values in field_specific_dict.items():
                 print(f"{field:20s} | {aspect:20s} | {len(values):3d} samples | mean = {mean(values):.8f}")
                 
-        return dict(field_sentence_certainty), dict(field_aspect_certainty)
+        
 
 
     # -------------------- Evaluation methods: ATTR -------------------- 
