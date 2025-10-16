@@ -112,7 +112,7 @@ class ModelEvaluator:
         return ranked
     
     # ---- linguistic uncertainty ---- ** Running CertaintyEstimator works best with transformers==4.40.2 ** 
-    def aspect_level_uncertainty_score(aspect_dict):
+    def aspect_level_uncertainty_score(self, aspect_dict):
         """
         Score per aspect type in percentage: high = certain.
         The percentage means how many sentences in the LLM output are predicted as certain for the aspect.
@@ -133,7 +133,7 @@ class ModelEvaluator:
         
         return aspect_scores
 
-    def get_uncertainty_estimations(text: str):
+    def get_uncertainty_estimations(self, text: str):
         """
         Given a text (output from LLM), the function:
         1. Removes citations from text 
@@ -177,7 +177,7 @@ class ModelEvaluator:
         return mean_sentence_certainty, aspect_scores
     
 
-    def collect_certainty_by_field(data):
+    def collect_certainty_by_field(self, data):
         """
         Collects uncertainty results (both sentence-level and aspect-level) per sample in data. 
         Returns two dictionaries:
@@ -218,7 +218,7 @@ class ModelEvaluator:
     # -------------------- Evaluation methods: ATTR -------------------- 
     # Code adapted from https://github.com/AbhilashaRavichander/HALoGEN/blob/main/src/scientific_attribution.py 
 
-    def _query_semantic_scholar(title):
+    def _query_semantic_scholar(self, title):
        """
        Query the Semantic Scholar API for a given title.
        Args:
@@ -260,7 +260,7 @@ class ModelEvaluator:
     
        return ''
     
-    def extract_citations(llm_output: str):
+    def extract_citations(self, llm_output: str):
         """
         Extracts the citations JSON block from an LLM output formatted according to the prompt template.
         **Note: if the JSON is not well-structured and cannot be read, the function will return None, and the sample will not be included in the evaluation.
@@ -292,13 +292,13 @@ class ModelEvaluator:
             print("Error parsing citations JSON:", e)
             return None
         
-    def _clean_text(text):
+    def _clean_text(self, text):
         
         if not isinstance(text, str) or text is None:
             return ""
         return text.translate(str.maketrans('', '', string.punctuation)).strip().lower()
     
-    def process_attribution_hallucinations(llm_output):
+    def process_attribution_hallucinations(self, llm_output):
         """
         Given an output from an LLM, the function:
         1. extracts citations
@@ -323,7 +323,7 @@ class ModelEvaluator:
         score = hallucinated_citations / len(citations) * 100
         return score
     
-    def collect_attr_by_field(data):
+    def collect_attr_by_field(self, data):
         """
         Goes over data samples (i.e. LLM outputs) and generates report of attribution hallucination score per field. 
         """
