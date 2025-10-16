@@ -28,6 +28,6 @@ if __name__ == "__main__":
     parser.add_argument("--eval", nargs="+", required=True)
     args = parser.parse_args()
 
-    runner = EvaluationRunner(args.model_name, args.file)
+    runner = EvaluationRunner(args.model_name, args.file, args.save)
     runner.run(args.eval)
-    runner.save(args.save)
+    runner.save()

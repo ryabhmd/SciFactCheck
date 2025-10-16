@@ -31,11 +31,12 @@ class EvaluationRunner:
     and the evaluation logic in ModelEvaluator.
     """
      
-    def __init__(self, model_name, file_path):
+    def __init__(self, model_name, file_path, output_path):
         self.model_name = model_name
         self.file_path = file_path
         self.data = self._load_jsonl(file_path)
         self.evaluator = ModelEvaluator(model_name, data=self.data)
+        self.output_path = output_path
         print(f"Loaded {len(self.data)} records for model {self.model_name}")
 
     @staticmethod
@@ -64,28 +65,32 @@ class EvaluationRunner:
             for eval_type in eval_types:
 
                 if eval_type == "ovr-logprobs":
-                    record["output"]["logprob_eval"] = record["output"].get("length_norm_logprob")
+                    record["eval_logprobs"] = record["output"]["length_norm_logprob"]
 
-                elif eval_type == "ovr-uncertainty":
+                if eval_type == "ovr-uncertainty":
                     text = record["output"]["text"]
                     mean_cert, aspect_scores = self.evaluator.get_uncertainty_estimations(text)
                     record["eval_uncertainty"] = {
-                        "mean_sentence_certainty": mean_cert,
+                        "mean_sentence_certainty": float(mean_cert),
                         "aspect_scores": aspect_scores,
                     }
 
                 elif eval_type == "attr":
                     text = record["output"]["text"]
                     score = self.evaluator.process_attribution_hallucinations(text)
+                    print(score)
+                    print(type(score))
                     record["eval_attr"] = {"attr_score": score}
+
+            self.save()
 
         print("Done evaluating samples!")
 
-    def save(self, output_path):
-        with open(output_path, "w") as f:
+    def save(self):
+        with open(self.output_path, "w") as f:
             for record in self.data:
                 f.write(json.dumps(record) + "\n")
-        print(f"Saved enriched data to {output_path}")
+        print(f"Saved evaluated data to {self.output_path}")
 
     ## TODO: create functions that aggregate results of evals by field and compare between them
 
