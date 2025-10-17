@@ -197,22 +197,6 @@ class ModelEvaluator:
                 field_aspect_certainty[field].append(aspect_scores)
 
         return dict(field_sentence_certainty), dict(field_aspect_certainty)
-                
-        print("=== mean sentence certainty summary by field ===")
-        for field, values in field_sentence_certainty.items():
-            print(f"{field:20s} | {len(values):3d} samples | mean = {mean(values):.8f}")
-            
-        print("=== mean aspect certainty summary by field ===") # for each field, go over the aspect_level_uncertainty per each aspect and get the mean
-        for field, values in field_aspect_certainty.items():
-            field_specific_dict = defaultdict(list)
-            for value in values:
-                for aspect, score in value.items():
-                    field_specific_dict[aspect].append(score)
-                    
-            for aspect, values in field_specific_dict.items():
-                print(f"{field:20s} | {aspect:20s} | {len(values):3d} samples | mean = {mean(values):.8f}")
-                
-        
 
 
     # -------------------- Evaluation methods: ATTR -------------------- 

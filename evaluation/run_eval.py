@@ -18,16 +18,22 @@ Outputs:
 """
 
 import argparse
+from pathlib import Path
 from evaluation_runner import EvaluationRunner
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", required=True)
     parser.add_argument("--file", required=True)
-    parser.add_argument("--save", required=True)
     parser.add_argument("--eval", nargs="+", required=True)
     args = parser.parse_args()
 
+    input_path = Path(args.file)
+
+    evaluated_path = input_path.with_name(input_path.stem + "_evaluated" + input_path.suffix)
+    summary_path = input_path.with_name(input_path.stem + "_summary" + input_path.suffix)
+
     runner = EvaluationRunner(args.model_name, args.file)
     runner.run(args.eval)
-    runner.save(args.save)
+    runner.save(evaluated_path)
+    runner.save_summary_evaluations(args.eval, summary_path)
