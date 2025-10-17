@@ -25,13 +25,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", required=True)
     parser.add_argument("--file", required=True)
+    parser.add_argument("--save", required=True)
     parser.add_argument("--eval", nargs="+", required=True)
     args = parser.parse_args()
 
     input_path = Path(args.file)
+    save_path = Path(args.save)
 
     evaluated_path = input_path.with_name(input_path.stem + "_evaluated" + input_path.suffix)
-    summary_path = input_path.with_name(input_path.stem + "_summary" + input_path.suffix)
+    summary_filename = input_path.stem + "_summary.json"
+    summary_path = save_path / summary_filename
 
     runner = EvaluationRunner(args.model_name, args.file)
     runner.run(args.eval)
