@@ -1,70 +1,67 @@
-import argparse
-from tqdm import tqdm
-from pathlib import Path
-
-import re
-import os
 import json
+import re
+import argparse
+from pathlib import Path
+from tqdm import tqdm
 
 def _load_jsonl(path):
-        data = []
-        with open(path, "r") as f:
-            for line in f:
-                if line.strip():
-                    data.append(json.loads(line))
-        return data
+    data = []
+    with open(path, "r") as f:
+        for line in f:
+            if line.strip():
+                data.append(json.loads(line))
+    return data
 
-def create_verisocre_input_files(data, output_path):
+def create_veriscore_input_file(data, output_path):
     """
-    Create Veriscore input files for each record in a given data.
+    Create a single Veriscore input JSONL file for all records.
     
-    For each record in `data`, this function:
-    - Removes the citations section from the output text
-    - Extracts 'prompt', 'prompt_source', 'response', and 'model'
-    - Saves a JSONL file per record under:
-        output_path/<model_name_sanitized>/<index>_<model_name_sanitized>.jsonl
+    Each line is a dictionary with keys:
+    - prompt
+    - prompt_source
+    - response
+    - model
     """
 
-    for idx, record in enumerate(tqdm(data, desc="Creating Veriscore input files")):
+    if not data:
+        print("No data found!")
+        return
 
-        text = record["output"]["text"]
+    # Assume all records belong to the same model
+    model = data[0]["output"]["meta"]["model"]
+    model_folder = re.sub(r'[\\/]', '', model)
 
-        pattern = r'\{\s*"citations"\s*:\s*\[.*?\]\s*\}'
-        match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
-        
-        if match:
-            text = text[:match.start()]
+    # Create output directory
+    output_dir = Path(output_path)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-        prompt = record["prompt"]
-        prompt_source = "template"
+    # Output file: <model_name>_veriscore_input.jsonl
+    output_file = output_dir / f"{model_folder}_veriscore_input.jsonl"
 
-        response = text
+    with open(output_file, "w", encoding="utf-8") as fout:
+        for record in tqdm(data, desc=f"Preparing Veriscore input for {model_folder}"):
+            text = record["output"]["text"]
 
-        model = record["output"]["meta"]["model"]
+            # Remove citations section if present
+            pattern = r'\{\s*"citations"\s*:\s*\[.*?\]\s*\}'
+            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+            if match:
+                text = text[:match.start()].strip()
 
-        # Sanitize model name (remove slashes and backslashes)
-        model_folder = re.sub(r'[\\/]', '', model)
+            prompt = record["prompt"]
+            prompt_source = "template"
+            response = text
 
-        # Create model-specific folder
-        model_dir = Path(output_path) / model_folder
-        model_dir.mkdir(parents=True, exist_ok=True)
+            veriscore_record = {
+                "prompt": prompt,
+                "prompt_source": prompt_source,
+                "response": response,
+                "model": model
+            }
 
-        # Build file name with padded index
-        filename = f"{idx:04d}_{model_folder}.jsonl"
-        file_path = model_dir / filename
+            fout.write(json.dumps(veriscore_record, ensure_ascii=False) + "\n")
 
-        # Build record to save
-        veriscore_record = {
-            "prompt": prompt,
-            "prompt_source": prompt_source,
-            "response": response,
-            "model": model
-        }
-
-        # Write JSONL file (1 record per file)
-        with open(file_path, "w", encoding="utf-8") as fout:
-            json.dump(veriscore_record, fout, ensure_ascii=False)
-            fout.write("\n")
+    print(f"Veriscore input saved at {output_file}")
 
 
 if __name__ == "__main__":
@@ -74,5 +71,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     data = _load_jsonl(args.data_path)
+    create_veriscore_input_file(data, args.save_dir)
 
-    create_verisocre_input_files(data, args.save_dir)
