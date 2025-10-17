@@ -11,15 +11,15 @@ export BASE_DIR="/netscratch/$USER/SciFactCheck/SciFactCheck/prompting"
 export PROJECT="factuality-eval/SciFactCheck"
 export CUDA_DEVICE_ORDER="PCI_BUS_ID"
 
-export DEFAULT_PARTITION="RTXA6000,V100-32GB,H100,A100-40GB,A100-80GB,A100-PCI,RTXA6000-SLT"
+export DEFAULT_PARTITION="V100-32GB,H100,A100-40GB,A100-80GB,A100-PCI"
 
 export ENROOT_IMAGE_DIR=/netscratch/abu/images
-export IMAGE=$ENROOT_IMAGE_DIR/scifactcheck.sqsh
+export IMAGE=$ENROOT_IMAGE_DIR/scifactcheck_prompting.sqsh
 # Weights & Biases
 export WANDB_PROJECT=$PROJECT
 
 # === Model + Dataset parameters ===
-MODEL_NAME=${MODEL_NAME:-"meta-llama/Llama-3.1-8B-Instruct"}
+MODEL_NAME=${MODEL_NAME:-"facebook/galactica-6.7b"}
 MODEL_TYPE=${MODEL_TYPE:-hf}
 DATASET_NAME=${DATASET_NAME:-"rabuahmad/scifactcheck"}
 PROMPT_TEMPLATE=${PROMPT_TEMPLATE:-"${BASE_DIR}/prompt_template.txt"}

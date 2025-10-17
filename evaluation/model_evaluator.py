@@ -300,7 +300,7 @@ class ModelEvaluator:
         hallucinated_citations = 0
         
         for citation in tqdm(citations, desc="Verifying citations against S2ORC"):
-            s2orc_title = self.self_query_semantic_scholar(title=citation['title'])
+            s2orc_title = self._query_semantic_scholar(title=citation['title'])
             if self._clean_text(citation['title']) != self._clean_text(s2orc_title):
                 hallucinated_citations += 1      
                 
