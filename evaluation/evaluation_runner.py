@@ -88,15 +88,7 @@ class EvaluationRunner:
 
         print("Done evaluating samples!")
 
-<<<<<<< HEAD
     # =========================== Collecting and saving results =========================== #
-=======
-    def save(self):
-        with open(self.output_path, "w") as f:
-            for record in self.data:
-                f.write(json.dumps(record) + "\n")
-        print(f"Saved evaluated data to {self.output_path}")
->>>>>>> 1dd48326a78d2fbc2b9841770f28074aedc435a7
 
     def collect_attr_by_field(self):
         """
