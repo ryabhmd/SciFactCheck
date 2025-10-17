@@ -40,7 +40,7 @@ def create_verisocre_input_files(data, output_path):
 
         response = text
 
-        model = record["meta"]["model"]
+        model = record["output"]["meta"]["model"]
 
         # Sanitize model name (remove slashes and backslashes)
         model_folder = re.sub(r'[\\/]', '', model)
