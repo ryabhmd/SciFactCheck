@@ -50,7 +50,7 @@ def create_verisocre_input_files(data, output_path):
         model_dir.mkdir(parents=True, exist_ok=True)
 
         # Build file name with padded index
-        filename = f"{idx:03d}_{model_folder}.jsonl"
+        filename = f"{idx:04d}_{model_folder}.jsonl"
         file_path = model_dir / filename
 
         # Build record to save
