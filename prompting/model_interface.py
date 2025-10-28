@@ -57,6 +57,7 @@ class HFModel(BaseModelInterface):
                 device_map="auto",
                 force_download=force_download
             )
+            print("Loaded OPT model.")
         else:
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_id,
