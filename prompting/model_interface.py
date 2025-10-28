@@ -99,7 +99,7 @@ class HFModel(BaseModelInterface):
         elif "SciDFM" in self.model_id:
             chat_template = "<|user|>:{instruction}<|assistant|>:"
             prompt = chat_template.format(instruction=prompt)
-            inputs = tokenizer(input_text, return_tensors="pt").to(self.device)
+            inputs = self.tokenizer(input_text, return_tensors="pt").to(self.device)
             outputs = self.model.generate(
                 **inputs,
                 max_new_tokens=max_new_tokens,
