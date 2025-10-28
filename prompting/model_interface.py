@@ -78,7 +78,9 @@ class HFModel(BaseModelInterface):
                 input_ids,
                 max_new_tokens=max_new_tokens
             )
+            print(outputs)
             generated_text = self.tokenizer.decode(outputs[0])
+            print(generated_text)
 
         else:
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
