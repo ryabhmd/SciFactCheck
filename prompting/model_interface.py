@@ -57,7 +57,7 @@ class HFModel(BaseModelInterface):
                 device_map="auto",
                 force_download=force_download
             )
-            print("Loaded OPT model.")
+
         else:
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_id,
@@ -73,22 +73,24 @@ class HFModel(BaseModelInterface):
 
         if "galactica" in self.model_id:
             prompt = prompt + " [START_REF]"
-            
-        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
-        
-        outputs = self.model.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            return_dict_in_generate=True,
-            output_scores=True,
-            **kwargs,
-        )
+            input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids.to(self.device)
+            outputs = self.model.generate(input_ids)
+            generated_text = self.tokenizer.decode(outputs[0])
 
-        # Decode only generated continuation
-        generated_text = self.tokenizer.decode(
-            outputs.sequences[0][inputs.input_ids.shape[1]:],
-            skip_special_tokens=True,
-        )
+        else:
+            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                return_dict_in_generate=True,
+                output_scores=True,
+                **kwargs,
+            )
+            # Decode only generated continuation
+            generated_text = self.tokenizer.decode(
+                outputs.sequences[0][inputs.input_ids.shape[1]:],
+                skip_special_tokens=True,
+            )
 
         # Compute per-token logprobs
         logprobs = []
