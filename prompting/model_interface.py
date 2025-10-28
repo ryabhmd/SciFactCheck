@@ -76,11 +76,10 @@ class HFModel(BaseModelInterface):
             input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids.to(self.device)
             outputs = self.model.generate(
                 input_ids,
-                max_new_tokens=max_new_tokens
+                max_new_tokens=max_new_tokens,
+                return_dict_in_generate=True,
+                output_scores=True
             )
-            print(outputs)
-            generated_text = self.tokenizer.decode(outputs[0])
-            print(generated_text)
 
         else:
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
@@ -91,11 +90,12 @@ class HFModel(BaseModelInterface):
                 output_scores=True,
                 **kwargs,
             )
-            # Decode only generated continuation
-            generated_text = self.tokenizer.decode(
-                outputs.sequences[0][inputs.input_ids.shape[1]:],
-                skip_special_tokens=True,
-            )
+            
+        # Decode only generated continuation
+        generated_text = self.tokenizer.decode(
+            outputs.sequences[0][inputs.input_ids.shape[1]:],
+            skip_special_tokens=True,
+        )
 
         # Compute per-token logprobs
         logprobs = []
