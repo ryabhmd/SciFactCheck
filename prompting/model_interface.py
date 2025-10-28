@@ -43,24 +43,38 @@ class HFModel(BaseModelInterface):
     """Local HuggingFace model with detailed logprobs."""
 
     def __init__(self, model_id: str, api_key: Optional[str] = None, seed: int = 0, force_download: Optional[bool] = True):
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from transformers import AutoModelForCausalLM, AutoTokenizer, OPTForCausalLM
 
         self.model_id = model_id
         torch.manual_seed(seed)
         self.api_key = api_key or os.getenv("HF_API_KEY")
         self.tokenizer = AutoTokenizer.from_pretrained(model_id, use_auth_token=self.api_key)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_id,
-            use_auth_token=self.api_key,
-            torch_dtype=torch.bfloat16,
-            device_map="auto",
-            force_download=force_download
-        )
+        if "galactica" in self.model_id:
+            self.model = OPTForCausalLM.from_pretrained(
+                model_id, 
+                use_auth_token=self.api_key,
+                torch_dtype=torch.bfloat16,
+                device_map="auto",
+                force_download=force_download
+            )
+        else:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_id,
+                use_auth_token=self.api_key,
+                torch_dtype=torch.bfloat16,
+                device_map="auto",
+                force_download=force_download
+            )
         self.device = self.model.device
         logging.info(f"Loaded HuggingFace model: {model_id} on {self.device}")
 
     def generate(self, prompt: str, max_new_tokens: int = 512, **kwargs) -> Dict[str, Any]:
+
+        if "galactica" in self.model_id:
+            prompt = prompt + " [START_REF]"
+            
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+        
         outputs = self.model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
