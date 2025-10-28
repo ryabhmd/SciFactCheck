@@ -43,13 +43,16 @@ class HFModel(BaseModelInterface):
     """Local HuggingFace model with detailed logprobs."""
 
     def __init__(self, model_id: str, api_key: Optional[str] = None, seed: int = 0, force_download: Optional[bool] = True):
-        from transformers import AutoModelForCausalLM, AutoTokenizer, OPTForCausalLM
+        from transformers import (
+        AutoModelForCausalLM, AutoTokenizer, OPTForCausalLM, LlamaTokenizer
+        )
 
         self.model_id = model_id
         torch.manual_seed(seed)
         self.api_key = api_key or os.getenv("HF_API_KEY")
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id, use_auth_token=self.api_key)
+        
         if "galactica" in self.model_id:
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, use_auth_token=self.api_key)
             self.model = OPTForCausalLM.from_pretrained(
                 model_id, 
                 use_auth_token=self.api_key,
@@ -58,7 +61,18 @@ class HFModel(BaseModelInterface):
                 force_download=force_download
             )
 
+        elif "SciDFM" in self.model_id:
+            self.tokenizer = LlamaTokenizer.from_pretrained(self.model_id, use_fast=False, use_auth_token=self.api_key)
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_id, 
+                use_auth_token=self.api_key,
+                torch_dtype=torch.bfloat16, 
+                device_map="auto", 
+                trust_remote_code=True
+            )
+    
         else:
+            self.tokenizer = AutoTokenizer.from_pretrained(model_id, use_auth_token=self.api_key)
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_id,
                 use_auth_token=self.api_key,
@@ -82,6 +96,19 @@ class HFModel(BaseModelInterface):
                 output_scores=True
             )
 
+        elif "SciDFM" in self.model_id:
+            chat_template = "<|user|>:{instruction}<|assistant|>:"
+            prompt = chat_template.format(instruction=prompt)
+            inputs = tokenizer(input_text, return_tensors="pt").to(self.device)
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                return_dict_in_generate=True,
+                output_scores=True,
+                eos_token_id=tokenizer.eos_token_id,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+            
         else:
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
             outputs = self.model.generate(
