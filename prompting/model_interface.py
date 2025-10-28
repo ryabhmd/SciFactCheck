@@ -73,9 +73,10 @@ class HFModel(BaseModelInterface):
 
         if "galactica" in self.model_id:
             prompt = prompt + " [START_REF]"
+            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
             input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids.to(self.device)
             outputs = self.model.generate(
-                input_ids,
+                inputs.input_ids,
                 max_new_tokens=max_new_tokens,
                 return_dict_in_generate=True,
                 output_scores=True
