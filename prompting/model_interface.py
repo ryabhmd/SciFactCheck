@@ -174,11 +174,12 @@ class HFModel(BaseModelInterface):
 class LiteLLMModel(BaseModelInterface):
     """Generic API model via LiteLLM (OpenAI, Anthropic, Gemini, etc.)."""
 
-    def __init__(self, model_name: str, api_key: Optional[str] = None):
+    def __init__(self, model_name: str, api_key: Optional[str] = None, gemini_key: Optional[str] = None):
         from litellm import completion
         self.completion = completion
         self.model_name = model_name
         self.api_key = api_key or os.getenv("LITELLM_API_KEY")
+        self.gemini_key = gemini_key or os.getenv("GEMINI_API_KEY")
 
         if not self.api_key:
             logging.warning(
@@ -195,7 +196,7 @@ class LiteLLMModel(BaseModelInterface):
                 max_tokens=max_tokens,
                 temperature=temperature,
                 logprobs=True,  # Request logprobs if supported
-                api_key=self.api_key,
+                api_key=self.gemini_key,
                 **kwargs,
             )
         except Exception as e:
