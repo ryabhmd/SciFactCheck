@@ -167,7 +167,6 @@ class ModelEvaluator:
             
             # aspect-level certainty prediction
             aspect_level_estimator = CertaintyEstimator('aspect-level')
-            if sentences
             aspect_level_certainty = aspect_level_estimator.predict(sentences,tqdm=tqdm)
             
             for sentence_result in aspect_level_certainty:
