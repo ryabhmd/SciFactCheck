@@ -36,7 +36,7 @@ if __name__ == "__main__":
     summary_filename = input_path.stem + "_summary.json"
     summary_path = save_path / summary_filename
 
-    runner = EvaluationRunner(args.model_name, args.file)
+    runner = EvaluationRunner(args.model_name, args.file, output_path=evaluated_path)
     runner.run(args.eval)
-    runner.save(evaluated_path)
+    runner.save()
     runner.save_summary_evaluations(args.eval, summary_path)
