@@ -72,8 +72,10 @@ class EvaluationRunner:
                 if eval_type == "ovr-uncertainty":
                     text = record["output"]["text"]
                     mean_cert, aspect_scores = self.evaluator.get_uncertainty_estimations(text)
+                    if mean_cert != None:
+                        mean_cert = float(mean_cert)
                     record["eval_uncertainty"] = {
-                        "mean_sentence_certainty": float(mean_cert),
+                        "mean_sentence_certainty": mean_cert,
                         "aspect_scores": aspect_scores,
                     }
 
