@@ -52,40 +52,40 @@ class HFModel(BaseModelInterface):
         self.api_key = api_key or os.getenv("HF_API_KEY")
         
         if "galactica" in self.model_id:
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, use_auth_token=self.api_key)
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, token=self.api_key)
             self.model = OPTForCausalLM.from_pretrained(
                 model_id, 
-                use_auth_token=self.api_key,
+                token=self.api_key,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
                 force_download=force_download
             )
 
         elif "SciDFM" in self.model_id:
-            self.tokenizer = LlamaTokenizer.from_pretrained(self.model_id, use_fast=False, use_auth_token=self.api_key)
+            self.tokenizer = LlamaTokenizer.from_pretrained(self.model_id, use_fast=False, token=self.api_key)
             self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_id, 
-                use_auth_token=self.api_key,
+                token=self.api_key,
                 torch_dtype=torch.bfloat16, 
                 device_map="auto", 
                 trust_remote_code=True
             )
 
         elif "forge" in self.model_id:
-            self.tokenizer = GPTNeoXTokenizerFast.from_pretrained(self.model_id, use_auth_token=self.api_key)
+            self.tokenizer = GPTNeoXTokenizerFast.from_pretrained(self.model_id, token=self.api_key)
             self.model = GPTNeoXForCausalLM.from_pretrained(
                 model_id,
-                use_auth_token=self.api_key,
+                token=self.api_key,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
                 force_download=force_download
             )
     
         else:
-            self.tokenizer = AutoTokenizer.from_pretrained(model_id, use_auth_token=self.api_key)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=self.api_key)
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_id,
-                use_auth_token=self.api_key,
+                token=self.api_key,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
                 force_download=force_download
