@@ -178,13 +178,13 @@ class LiteLLMModel(BaseModelInterface):
         from litellm import completion
         self.completion = completion
         self.model_name = model_name
-        self.api_key = api_key or os.getenv("LITELLM_API_KEY")
-        self.gemini_key = gemini_key or os.getenv("GEMINI_API_KEY")
+        #self.api_key = api_key or os.getenv("LITELLM_API_KEY")
+        #self.gemini_key = gemini_key or os.getenv("GEMINI_API_KEY")
 
-        if not self.api_key:
-            logging.warning(
-                f"No API key found for {model_name}. Make sure environment vars are set."
-            )
+        #if not self.api_key:
+        #    logging.warning(
+        #        f"No API key found for {model_name}. Make sure environment vars are set."
+        #    )
 
         logging.info(f"Loaded LiteLLM model: {model_name}")
 
@@ -193,10 +193,8 @@ class LiteLLMModel(BaseModelInterface):
             response = self.completion(
                 model=self.model_name,
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=max_tokens,
-                temperature=temperature,
+                max_completion_tokens=max_tokens,
                 logprobs=True,  # Request logprobs if supported
-                api_key=self.gemini_key,
                 **kwargs,
             )
         except Exception as e:
