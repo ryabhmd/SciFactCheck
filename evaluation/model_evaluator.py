@@ -155,6 +155,7 @@ class ModelEvaluator:
         sentences = text.split('.')
         sentences = [sentence.strip() for sentence in sentences]
         sentences = [sentence for sentence in sentences if sentence != '']
+        print(f"Sentences: {sentences}")
         
         aspect_dict = defaultdict(list)
         
