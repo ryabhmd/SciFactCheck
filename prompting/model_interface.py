@@ -44,7 +44,7 @@ class HFModel(BaseModelInterface):
 
     def __init__(self, model_id: str, api_key: Optional[str] = None, seed: int = 0, force_download: Optional[bool] = True):
         from transformers import (
-        AutoModelForCausalLM, AutoTokenizer, OPTForCausalLM, LlamaTokenizer
+        AutoModelForCausalLM, AutoTokenizer, OPTForCausalLM, LlamaTokenizer, GPTNeoXTokenizerFast, GPTNeoXForCausalLM
         )
 
         self.model_id = model_id
@@ -69,6 +69,16 @@ class HFModel(BaseModelInterface):
                 torch_dtype=torch.bfloat16, 
                 device_map="auto", 
                 trust_remote_code=True
+            )
+
+        elif "forge" in self.model_id:
+            self.tokenizer = GPTNeoXTokenizerFast.from_pretrained(self.model_id, use_auth_token=self.api_key)
+            self.model = GPTNeoXForCausalLM.from_pretrained(
+                model_id,
+                use_auth_token=self.api_key,
+                torch_dtype=torch.bfloat16,
+                device_map="auto",
+                force_download=force_download
             )
     
         else:
@@ -108,7 +118,17 @@ class HFModel(BaseModelInterface):
                 eos_token_id=self.tokenizer.eos_token_id,
                 pad_token_id=self.tokenizer.eos_token_id,
             )
-            
+
+        elif "forge" in self.model_id:
+            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+            input_ids = inputs.input_ids
+            outputs = self.model.generate(
+                input_ids,
+                max_new_tokens=max_new_tokens,
+                return_dict_in_generate=True,
+                output_scores=True
+            )
+
         else:
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
             outputs = self.model.generate(
