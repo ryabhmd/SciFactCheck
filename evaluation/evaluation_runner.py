@@ -33,11 +33,12 @@ class EvaluationRunner:
     and the evaluation logic in ModelEvaluator.
     """
      
-    def __init__(self, model_name, file_path):
+    def __init__(self, model_name, file_path, output_path):
         self.model_name = model_name
         self.file_path = file_path
         self.data = self._load_jsonl(file_path)
         self.evaluator = ModelEvaluator(model_name, data=self.data)
+        self.output_path = output_path
         print(f"Loaded {len(self.data)} records for model {self.model_name}")
 
     @staticmethod
@@ -193,6 +194,12 @@ class EvaluationRunner:
                    }
                
        return dict(field_sentence_summary), dict(field_aspect_summary)
+
+    def save(self):
+        with open(self.output_path, "w") as f:
+            for record in self.data:
+                f.write(json.dumps(record) + "\n")
+        print(f"Saved evaluated data to {self.output_path}")
     
     def save_summary_evaluations(self, eval_types, output_path):
         """
