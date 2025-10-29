@@ -33,12 +33,11 @@ class EvaluationRunner:
     and the evaluation logic in ModelEvaluator.
     """
      
-    def __init__(self, model_name, file_path, output_path):
+    def __init__(self, model_name, file_path):
         self.model_name = model_name
         self.file_path = file_path
         self.data = self._load_jsonl(file_path)
         self.evaluator = ModelEvaluator(model_name, data=self.data)
-        self.output_path = output_path
         print(f"Loaded {len(self.data)} records for model {self.model_name}")
 
     @staticmethod
