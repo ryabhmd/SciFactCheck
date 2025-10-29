@@ -123,10 +123,11 @@ class HFModel(BaseModelInterface):
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
             input_ids = inputs.input_ids
             outputs = self.model.generate(
-                input_ids,
+                **inputs,
                 max_new_tokens=max_new_tokens,
                 return_dict_in_generate=True,
-                output_scores=True
+                output_scores=True, 
+                pad_token_id=self.tokenizer.eos_token_id
             )
 
         else:
