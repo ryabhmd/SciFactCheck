@@ -161,7 +161,11 @@ class ModelEvaluator:
         # sentence-level certainty prediction
         sentence_level_estimator = CertaintyEstimator('sentence-level')
         sentence_level_certainty = sentence_level_estimator.predict(sentences,tqdm=tqdm)
-        mean_sentence_certainty = mean(sentence_level_certainty)
+        if sentence_level_certainty: 
+            mean_sentence_certainty = mean(sentence_level_certainty)
+        else:
+            print("No sentence-level certainty scores are available.")
+            mean_sentence_certainty = None
         
         # aspect-level certainty prediction
         aspect_level_estimator = CertaintyEstimator('aspect-level')
