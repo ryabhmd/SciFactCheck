@@ -155,29 +155,30 @@ class ModelEvaluator:
         sentences = text.split('.')
         sentences = [sentence.strip() for sentence in sentences]
         sentences = [sentence for sentence in sentences if sentence != '']
-        print(f"Sentences: {sentences}")
+
+        if sentences != []:
         
-        aspect_dict = defaultdict(list)
-        
-        # sentence-level certainty prediction
-        sentence_level_estimator = CertaintyEstimator('sentence-level')
-        sentence_level_certainty = sentence_level_estimator.predict(sentences,tqdm=tqdm)
-        if sentence_level_certainty: 
+            aspect_dict = defaultdict(list)
+            
+            # sentence-level certainty prediction
+            sentence_level_estimator = CertaintyEstimator('sentence-level')
+            sentence_level_certainty = sentence_level_estimator.predict(sentences,tqdm=tqdm)
             mean_sentence_certainty = mean(sentence_level_certainty)
+            
+            # aspect-level certainty prediction
+            aspect_level_estimator = CertaintyEstimator('aspect-level')
+            if sentences
+            aspect_level_certainty = aspect_level_estimator.predict(sentences,tqdm=tqdm)
+            
+            for sentence_result in aspect_level_certainty:
+                for result in sentence_result:
+                    aspect, certainty = result[0], result[1]
+                    aspect_dict[aspect].append(certainty)
+                    
+            aspect_scores = self.aspect_level_uncertainty_score(aspect_dict)
+
         else:
-            print("No sentence-level certainty scores are available.")
-            mean_sentence_certainty = None
-        
-        # aspect-level certainty prediction
-        aspect_level_estimator = CertaintyEstimator('aspect-level')
-        aspect_level_certainty = aspect_level_estimator.predict(sentences,tqdm=tqdm)
-        
-        for sentence_result in aspect_level_certainty:
-            for result in sentence_result:
-                aspect, certainty = result[0], result[1]
-                aspect_dict[aspect].append(certainty)
-                
-        aspect_scores = self.aspect_level_uncertainty_score(aspect_dict)
+            return None, None
         
         return mean_sentence_certainty, aspect_scores
     
