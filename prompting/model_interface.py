@@ -191,14 +191,14 @@ class LiteLLMModel(BaseModelInterface):
 
         logging.info(f"Loaded LiteLLM model: {model_name}")
 
-    def generate(self, prompt: str, max_tokens: int = 512, temperature: float = 0.7, **kwargs) -> Dict[str, Any]:
+    def generate(self, prompt: str, max_tokens: int = 512, **kwargs) -> Dict[str, Any]:
         try:
             response = self.completion(
                 model=self.model_name,
                 messages=[{"role": "user", "content": prompt}],
-                max_completion_tokens=max_tokens,
-                logprobs=True,  # Request logprobs if supported
-                **kwargs,
+               # max_completion_tokens=max_tokens,
+               # logprobs=True,  # Request logprobs if supported
+               # **kwargs,
             )
         except Exception as e:
             logging.error(f"LiteLLM error for {self.model_name}: {e}")
