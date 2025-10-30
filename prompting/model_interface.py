@@ -44,7 +44,7 @@ class HFModel(BaseModelInterface):
 
     def __init__(self, model_id: str, api_key: Optional[str] = None, seed: int = 0, force_download: Optional[bool] = True):
         from transformers import (
-        AutoModelForCausalLM, AutoTokenizer, OPTForCausalLM, LlamaTokenizer, GPTNeoXTokenizerFast, GPTNeoXForCausalLM
+        AutoModelForCausalLM, AutoTokenizer
         )
 
         self.model_id = model_id
@@ -52,6 +52,7 @@ class HFModel(BaseModelInterface):
         self.api_key = api_key or os.getenv("HF_API_KEY")
         
         if "galactica" in self.model_id:
+            from transformers import OPTForCausalLM
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, token=self.api_key)
             self.model = OPTForCausalLM.from_pretrained(
                 model_id, 
@@ -62,6 +63,7 @@ class HFModel(BaseModelInterface):
             )
 
         elif "SciDFM" in self.model_id:
+            from transformers import LlamaTokenizer
             self.tokenizer = LlamaTokenizer.from_pretrained(self.model_id, use_fast=False, token=self.api_key)
             self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_id, 
@@ -72,6 +74,7 @@ class HFModel(BaseModelInterface):
             )
 
         elif "forge" in self.model_id:
+            from transformers import GPTNeoXTokenizerFast, GPTNeoXForCausalLM
             self.tokenizer = GPTNeoXTokenizerFast.from_pretrained(self.model_id, token=self.api_key)
             self.model = GPTNeoXForCausalLM.from_pretrained(
                 model_id,
