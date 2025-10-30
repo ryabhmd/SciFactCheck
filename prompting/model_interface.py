@@ -82,7 +82,7 @@ class HFModel(BaseModelInterface):
             )
     
         else:
-            self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=self.api_key)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=self.api_key, trust_remote_code=True)
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_id,
                 token=self.api_key,
