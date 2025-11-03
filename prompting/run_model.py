@@ -20,6 +20,7 @@ def main():
     parser.add_argument("--litellm_api_key", default=os.getenv("LITELLM_API_KEY"))
     parser.add_argument("--max_new_tokens", type=int, default=512)
     parser.add_argument("--limit", type=int, default=None, help="Optional limit for testing")
+    parser.add_argument("--apply_chat_template", action="store_true", default=False, help="Whether to format prompts with tokenizer.apply_chat_template() (default: False)")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -38,7 +39,7 @@ def main():
 
     # -----------Initialize model------------
     if args.model_type == "hf":
-        model = HFModel(args.model_name, api_key=args.hf_api_key, force_download=True)
+        model = HFModel(args.model_name, api_key=args.hf_api_key, force_download=True, apply_chat_template=args.apply_chat_template)
     else:
         model = LiteLLMModel(args.model_name, api_key=args.litellm_api_key)
 
