@@ -42,7 +42,7 @@ class BaseModelInterface(ABC):
 class HFModel(BaseModelInterface):
     """Local HuggingFace model with detailed logprobs."""
 
-    def __init__(self, model_id: str, api_key: Optional[str] = None, seed: int = 0, force_download: Optional[bool] = True):
+    def __init__(self, model_id: str, api_key: Optional[str] = None, seed: int = 0, force_download: Optional[bool] = True, apply_chat_template: Optional[bool] = False):
         from transformers import (
         AutoModelForCausalLM, AutoTokenizer
         )
@@ -50,6 +50,7 @@ class HFModel(BaseModelInterface):
         self.model_id = model_id
         torch.manual_seed(seed)
         self.api_key = api_key or os.getenv("HF_API_KEY")
+        self.apply_chat_template = apply_chat_template
         
         if "galactica" in self.model_id:
             from transformers import OPTForCausalLM
@@ -98,18 +99,7 @@ class HFModel(BaseModelInterface):
 
     def generate(self, prompt: str, max_new_tokens: int = 512, **kwargs) -> Dict[str, Any]:
 
-        if "galactica" in self.model_id:
-            prompt = prompt + " [START_REF]"
-            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
-            input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids.to(self.device)
-            outputs = self.model.generate(
-                inputs.input_ids,
-                max_new_tokens=max_new_tokens,
-                return_dict_in_generate=True,
-                output_scores=True
-            )
-
-        elif "SciDFM" in self.model_id:
+        if "SciDFM" in self.model_id:
             chat_template = "<|user|>:{instruction}<|assistant|>:"
             prompt = chat_template.format(instruction=prompt)
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
@@ -122,18 +112,17 @@ class HFModel(BaseModelInterface):
                 pad_token_id=self.tokenizer.eos_token_id,
             )
 
-        elif "forge" in self.model_id:
-            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
-            input_ids = inputs.input_ids
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=max_new_tokens,
-                return_dict_in_generate=True,
-                output_scores=True, 
-                pad_token_id=self.tokenizer.eos_token_id
-            )
-
         else:
+            if self.apply_chat_template:
+                messages = [
+                {"role": "user", "content": prompt}
+                ]
+                prompt = self.tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True
+                )
+
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
             outputs = self.model.generate(
                 **inputs,
