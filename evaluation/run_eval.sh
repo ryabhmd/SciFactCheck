@@ -22,9 +22,9 @@ mkdir -p $LOGS_DIR
 mkdir -p $RESULTS_DIR
 
 # Model + evaluation setup
-export MODEL_NAME="Qwen/Qwen3-4B-Instruct-2507"
-export INPUT_FILE="$INPUT_DIR/meta-llama_Llama-3.1-8B-Instruct_results.jsonl"
-export OUTPUT_FILE="$RESULTS_DIR/meta-llama_Llama-3.1-8B-Instruct_results_evaluated.jsonl"
+export MODEL_NAME="OpenDFM/SciDFM-MoE-A5.6B-v1.0"
+export INPUT_FILE="$INPUT_DIR/OpenDFM_SciDFM-MoE-A5.6B-v1.0_results.jsonl"
+export OUTPUT_FILE="$RESULTS_DIR"
 export EVAL_TYPES="ovr-logprobs ovr-uncertainty attr"
 
 # Optional: API keys (read from env vars or .env file)

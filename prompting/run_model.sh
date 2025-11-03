@@ -11,15 +11,15 @@ export BASE_DIR="/netscratch/$USER/SciFactCheck/SciFactCheck/prompting"
 export PROJECT="factuality-eval/SciFactCheck"
 export CUDA_DEVICE_ORDER="PCI_BUS_ID"
 
-export DEFAULT_PARTITION="V100-32GB,H100,A100-40GB,A100-80GB,A100-PCI"
+export DEFAULT_PARTITION="H100,A100-40GB,A100-80GB"
 
 export ENROOT_IMAGE_DIR=/netscratch/abu/images
-export IMAGE=$ENROOT_IMAGE_DIR/scifactcheck_prompting.sqsh
+export IMAGE=$ENROOT_IMAGE_DIR/scifactcheck_prompting_qwen3_update.sqsh
 # Weights & Biases
 export WANDB_PROJECT=$PROJECT
 
 # === Model + Dataset parameters ===
-MODEL_NAME=${MODEL_NAME:-"facebook/galactica-6.7b"}
+MODEL_NAME=${MODEL_NAME:-"Qwen/Qwen3-8B"}
 MODEL_TYPE=${MODEL_TYPE:-hf}
 DATASET_NAME=${DATASET_NAME:-"rabuahmad/scifactcheck"}
 PROMPT_TEMPLATE=${PROMPT_TEMPLATE:-"${BASE_DIR}/prompt_template.txt"}
@@ -39,7 +39,7 @@ mkdir -p ${LOG_DIR}
 # === Default SLURM container settings ===
 export SLURM_MEM=${SLURM_MEM:-128G}
 export SLURM_CPUS=${SLURM_CPUS:-4}
-export ANY_PARTITION=${ANY_PARTITION:-RTXA6000,V100-32GB,H100,A100-40GB,A100-80GB,A100-PCI,RTXA6000-SLT}
+export ANY_PARTITION=${ANY_PARTITION:-H100,A100-40GB,A100-80GB,A100-PCI}
 
 export SRUN="srun -K \
   --job-name=${JOB_NAME}\
@@ -53,7 +53,7 @@ export SRUN="srun -K \
   --export ALL"
 
 # === Command to run ===
-CMD=(python run_model.py
+CMD=(python3 run_model.py
 	--model_name "$MODEL_NAME"
 	--model_type "$MODEL_TYPE"
 	--dataset_name "$DATASET_NAME"

@@ -91,7 +91,6 @@ class HFModel(BaseModelInterface):
                 token=self.api_key,
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
-                force_download=force_download,
                 trust_remote_code=True
             )
         self.device = self.model.device
