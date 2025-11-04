@@ -32,7 +32,7 @@ if __name__ == "__main__":
     input_path = Path(args.file)
     save_path = Path(args.save)
 
-    evaluated_filename = input_path.stem + "evaluated.json"
+    evaluated_filename = input_path.stem + "_evaluated.json"
     evaluated_path = save_path / evaluated_filename
     summary_filename = input_path.stem + "_summary.json"
     summary_path = save_path / summary_filename
