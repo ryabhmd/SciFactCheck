@@ -270,17 +270,17 @@ class ModelEvaluator:
         try:
             parsed = json.loads(json_str)
             citations = parsed.get("citations", None)
+
+            # Ensure every citation has a "title" key
+            if not all(isinstance(c, dict) and "title" in c for c in citations):
+                return None
             
             # Return only if it's a list
             if isinstance(citations, list):
                 return citations
             else:
                 return None
-                
-            # Ensure every citation has a "title" key
-            if not all(isinstance(c, dict) and "title" in c for c in citations):
-                return None
-            
+    
         except json.JSONDecodeError as e:
             print("Error parsing citations JSON:", e)
             return None
