@@ -276,6 +276,10 @@ class ModelEvaluator:
                 return citations
             else:
                 return None
+                
+            # Ensure every citation has a "title" key
+            if not all(isinstance(c, dict) and "title" in c for c in citations):
+                return None
             
         except json.JSONDecodeError as e:
             print("Error parsing citations JSON:", e)
