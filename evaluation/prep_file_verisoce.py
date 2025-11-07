@@ -12,6 +12,15 @@ def _load_jsonl(path):
                 data.append(json.loads(line))
     return data
 
+def remove_think_blocks(text: str) -> str:
+    """
+    Removes everything between <think> and </think> tags (including the tags themselves)
+    from the given text.
+    """
+    # re.DOTALL makes '.' match newlines too
+    cleaned_text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    return cleaned_text
+
 def create_veriscore_input_file(data, output_path):
     """
     Create a single Veriscore input JSONL file for all records.
@@ -47,6 +56,9 @@ def create_veriscore_input_file(data, output_path):
             match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
             if match:
                 text = text[:match.start()].strip()
+
+            # Some models like Qwen3 return <think></think> blocks which should be ignored
+            text = remove_think_blocks(text)
 
             prompt = record["prompt"]
             prompt_source = "template"
