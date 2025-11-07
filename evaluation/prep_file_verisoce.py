@@ -19,6 +19,7 @@ def remove_think_blocks(text: str) -> str:
     """
     # re.DOTALL makes '.' match newlines too
     cleaned_text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    cleaned_text = cleaned_text.replace("\n", "")
     return cleaned_text
 
 def create_veriscore_input_file(data, output_path):
