@@ -120,7 +120,8 @@ class HFModel(BaseModelInterface):
                 prompt = self.tokenizer.apply_chat_template(
                     messages,
                     tokenize=False,
-                    add_generation_prompt=True
+                    add_generation_prompt=True, 
+                    enable_thinking=False
                 )
 
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
