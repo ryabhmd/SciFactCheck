@@ -130,6 +130,8 @@ class HFModel(BaseModelInterface):
                 max_new_tokens=max_new_tokens,
                 return_dict_in_generate=True,
                 output_scores=True,
+                eos_token_id=self.tokenizer.eos_token_id,
+                pad_token_id=self.tokenizer.eos_token_id,
                 **kwargs,
             )
             
