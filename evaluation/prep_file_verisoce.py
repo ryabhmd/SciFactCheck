@@ -12,15 +12,22 @@ def _load_jsonl(path):
                 data.append(json.loads(line))
     return data
 
-def remove_think_blocks(text: str) -> str:
+def clean_model_output(text: str) -> str:
     """
-    Removes everything between <think> and </think> tags (including the tags themselves)
-    from the given text.
+    Removes unwanted formatting from model outputs:
+    - <think>...</think> reasoning traces
+    - Markdown code fences like ```json or ```python
+    - Leading/trailing whitespace
     """
-    # re.DOTALL makes '.' match newlines too
-    cleaned_text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
-    cleaned_text = cleaned_text.replace("\n", "")
-    return cleaned_text
+    # Remove <think>...</think> blocks
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+
+    # Remove Markdown-style code fences
+    text = re.sub(r"```(?:json|python)?\s*", "", text, flags=re.IGNORECASE)
+    text = text.replace("```", "")  # handle leftover ```
+    
+    return text.strip()
+
 
 def create_veriscore_input_file(data, output_path):
     """
@@ -58,8 +65,7 @@ def create_veriscore_input_file(data, output_path):
             if match:
                 text = text[:match.start()].strip()
 
-            # Some models like Qwen3 return <think></think> blocks which should be ignored
-            text = remove_think_blocks(text)
+            text = clean_model_output(text)
 
             prompt = record["prompt"]
             prompt_source = "template"
