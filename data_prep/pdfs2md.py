@@ -2,9 +2,12 @@
 
 import os
 from docling.document_converter import DocumentConverter
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 import argparse
 import csv
+from tqdm import tqdm
 
+accelerator_options = AcceleratorOptions(device=AcceleratorDevice.CUDA)
 
 def main(args):
 
@@ -21,23 +24,23 @@ def main(args):
 
     converter = DocumentConverter()
 
-    for filename in os.listdir(input_path):
-        if filename.lower().endswith(".pdf"):
-            pdf_path = os.path.join(input_path, filename)
-            md_filename = os.path.splitext(filename)[0] + ".md"
-            md_path = os.path.join(output_path, md_filename)
-            try:
-                result = converter.convert(pdf_path)
-                markdown_text = result.document.export_to_markdown()
+    pdf_files = [f for f in os.listdir(input_path) if f.lower().endswith(".pdf")]
+    for filename in tqdm(pdf_files, desc="Converting PDFs", unit="file"):
+        pdf_path = os.path.join(input_path, filename)
+        md_filename = os.path.splitext(filename)[0] + ".md"
+        md_path = os.path.join(output_path, md_filename)
+        try:
+            result = converter.convert(pdf_path)
+            markdown_text = result.document.export_to_markdown()
 
-                with open(md_path, "w", encoding="utf-8") as f:
-                    f.write(markdown_text)
-                print(f"Converted {filename} to {md_filename}")
+            with open(md_path, "w", encoding="utf-8") as f:
+                f.write(markdown_text)
+            print(f"Converted {filename} to {md_filename}")
                 
-            except Exception as e:
-                error = str(e)
-                print(f"Failed to convert {filename}: {error}")
-                writer.writerow([pdf_path, error])
+        except Exception as e:
+            error = str(e)
+            print(f"Failed to convert {filename}: {error}")
+            writer.writerow([pdf_path, error])
 
 
 if __name__ == "__main__":
