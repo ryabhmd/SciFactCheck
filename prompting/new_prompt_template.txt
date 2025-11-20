@@ -6,8 +6,8 @@ If you include external research citations, list them only at the end of your an
 
 {
   "citations": [
-    {"title": "Paper title", "authors": [“lastname, firstname”, “lastname, firstname”, .. ], "year": 2024, venue: “Proceedings of the Thirty-Third International Joint Conference on Artificial Intelligence”, "doi": "10.xxxx/xxxx"},
- {"title": "Paper title", "authors": [“lastname, firstname”, “lastname, firstname”, .. ], "year": 2024, venue: “Proceedings of the Thirty-Third International Joint Conference on Artificial Intelligence”, "doi": "10.xxxx/xxxx"},
+    {"title": "Paper title", "authors": [“lastname, firstname”, “lastname, firstname”, .. ], "year": publication_year, venue: "publication_venue", "doi": "10.xxxx/xxxx"},
+ {"title": "Paper title", "authors": [“lastname, firstname”, “lastname, firstname”, .. ], "year": 2024, venue: "publication_venue", "doi": "10.xxxx/xxxx"},
   ]
 }
 
