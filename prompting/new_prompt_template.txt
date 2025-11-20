@@ -1,6 +1,6 @@
 Scientific claims are those that are considered true according to current consensus in the scientific community and/or according to historical facts about a scientific topic. 
 
-Based on your best knowledge, tell me about the scientific concept $scientific_entity in the context of the $field domain. Your answer must consist of about 10 scientific claims. The text must be fluent and the claims must not be numbered. 
+Based on your best knowledge, tell me about the scientific concept $scientific_entity in the context of the $field domain. Your answer must consist of about 10 scientific claims, but text must be fluent and **the claims must not be numbered**. 
 
 If you include external research citations, list them only at the end of your answer in exact JSON format, following this structure:
 
