@@ -1,0 +1,16 @@
+Scientific claims are those that are considered true according to current consensus in the scientific community and/or according to historical facts about a scientific topic. 
+
+Based on your best knowledge, tell me about the scientific concept $scientific_entity in the context of the $field domain. Your answer mus consist of about 20 scientific claims.
+
+If you include external research citations, list them only at the end of your answer in exact JSON format, following this structure:
+
+{
+  "citations": [
+    {"title": "Paper title", "authors": [“lastname, firstname”, “lastname, firstname”, .. ], "year": 2024, venue: “Proceedings of the Thirty-Third International Joint Conference on Artificial Intelligence”, "doi": "10.xxxx/xxxx"},
+ {"title": "Paper title", "authors": [“lastname, firstname”, “lastname, firstname”, .. ], "year": 2024, venue: “Proceedings of the Thirty-Third International Joint Conference on Artificial Intelligence”, "doi": "10.xxxx/xxxx"},
+  ]
+}
+
+Do not use any other citation style (no brackets, numbers, or inline citations).
+Always include "citations": [] even if there are none.
+Separate the paragraph and the JSON with a newline.
