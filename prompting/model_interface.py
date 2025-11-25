@@ -157,6 +157,7 @@ class HFModel(BaseModelInterface):
         )
 
         return {
+            "prompt": prompt,
             "text": generated_text,
             "logprobs": logprobs,
             "length_norm_logprob": length_norm_logprob,
@@ -215,6 +216,7 @@ class LiteLLMModel(BaseModelInterface):
             pass  # Fallback: not all providers expose logprobs
 
         return {
+            "prompt": prompt,
             "text": text,
             "logprobs": logprobs,
             "length_norm_logprob": length_norm_logprob,
