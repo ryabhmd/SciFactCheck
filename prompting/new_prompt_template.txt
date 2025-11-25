@@ -1,16 +1,19 @@
 Scientific claims are those that are considered true according to current consensus in the scientific community and/or according to historical facts about a scientific topic. 
 
-Based on your best knowledge, tell me about the scientific concept $scientific_entity in the context of the $field domain. Your answer must be fluent and contain factual scientific claims. 
+Based on your best knowledge, give me a 200-word paragraph about the scientific concept $scientific_entity in the context of the $field domain. Your answer must be fluent and contain factual scientific claims. 
 
-If you include external research citations, list them only at the end of your answer in exact JSON format, following this structure:
+You must include at least one external research citation. List your citations only at the end of your answer in exact JSON format following this structure:
 
 {
   "citations": [
     {"title": "Paper title", "authors": [“lastname, firstname”, “lastname, firstname”, .. ], "year": publication_year, venue: "publication_venue", "doi": "10.xxxx/xxxx"},
- {"title": "Paper title", "authors": [“lastname, firstname”, “lastname, firstname”, .. ], "year": 2024, venue: "publication_venue", "doi": "10.xxxx/xxxx"},
+ {"title": "Paper title", "authors": [“lastname, firstname”, “lastname, firstname”, .. ], "year": publication_year, venue: "publication_venue", "doi": "10.xxxx/xxxx"},
   ]
 }
 
-Do not use any other citation style (no brackets, numbers, or inline citations).
-Always include "citations": [] even if there are none.
-Separate the paragraph and the JSON with a newline.
+**Important formatting instructions:**
+
+1. In you citations, do NOT use initials for author names such as "J. Smith". Use the full first and lastname for each author such as "John Smith".
+2. Do not use any other citation style (no brackets, numbers, or inline citations). 
+3. Do not include citations inside the paragraph.
+4. Separate the paragraph and the JSON of citations with a newline.
