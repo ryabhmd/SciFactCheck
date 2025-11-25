@@ -123,6 +123,8 @@ class HFModel(BaseModelInterface):
                     add_generation_prompt=True, 
                     enable_thinking=False
                 )
+            else:
+                prompt = "Instructions: " + prompt + " Answer: "
 
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
             outputs = self.model.generate(
