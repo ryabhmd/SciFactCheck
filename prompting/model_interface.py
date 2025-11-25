@@ -124,7 +124,7 @@ class HFModel(BaseModelInterface):
                     enable_thinking=False
                 )
             else:
-                prompt = "Instructions: " + prompt + " Answer: "
+                prompt = prompt + " **Answer:**"
 
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
             outputs = self.model.generate(
