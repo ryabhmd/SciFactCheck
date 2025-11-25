@@ -61,7 +61,6 @@ def main():
             "id": i,
             "field": field,
             "entity": entity,
-            "prompt": prompt,
             "output": result,
         }
 
