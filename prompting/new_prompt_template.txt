@@ -13,7 +13,7 @@ You must include at least one external research citation. List your citations on
 
 **Important formatting instructions:**
 
-1. In you citations, do NOT use initials for author names such as "J. Smith". Use the full first and lastname for each author such as "John Smith".
+1. In you citations, do NOT use initials for author names such as "J. Smith". Use the full first and lastname for each author such as "Smith, John".
 2. Do not use any other citation style (no brackets, numbers, or inline citations). 
 3. Do not include citations inside the paragraph.
 4. Separate the paragraph and the JSON of citations with a newline.
