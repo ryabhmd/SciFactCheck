@@ -66,7 +66,7 @@ def main():
         result = model.generate(prompt, max_new_tokens=args.max_new_tokens)
         
         if args.two_prompts:
-            citation_prompt = citation_template.substitute(paragraph=result)
+            citation_prompt = citation_template.substitute(paragraph=result["text"])
             citation_result = model.generate(citation_prompt, max_new_tokens=args.max_new_tokens)
 
             record = {
