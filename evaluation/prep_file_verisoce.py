@@ -67,13 +67,13 @@ def create_veriscore_input_file(data, output_path):
 
             text = clean_model_output(text)
 
-            prompt = record["prompt"]
+            prompt = record["output"]["prompt"]
             prompt_source = "template"
             response = text
 
             veriscore_record = {
                 "prompt": prompt,
-                "prompt_source": prompt_source,
+                "prompt_source": (record["id"], record["entity"]),
                 "response": response,
                 "model": model
             }

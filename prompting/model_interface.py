@@ -130,7 +130,9 @@ class HFModel(BaseModelInterface):
             outputs = self.model.generate(
                 **inputs,
                 max_new_tokens=max_new_tokens,
-                do_sample=False,
+                do_sample=True,
+                temperature=0.3,
+                repetition_penalty=1.1,
                 return_dict_in_generate=True,
                 output_scores=True,
                 eos_token_id=self.tokenizer.eos_token_id,

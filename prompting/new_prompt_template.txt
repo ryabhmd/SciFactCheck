@@ -1,19 +1,41 @@
-Scientific claims are those that are considered true according to current consensus in the scientific community and/or according to historical facts about a scientific topic. 
+A scientific claim is a statement that is true according to current scientific consensus and/or accepted historical facts about science.
 
-Based on your best knowledge, give me a 200-word paragraph about the scientific concept $scientific_entity in the context of the $field domain. Your answer must be fluent and contain factual scientific claims. 
+TASK:
+Write a paragraph of 200 words about the scientific concept $scientific_entity in the context of the $field domain. After that, list citations of relevant studies according to the formatting rules below.
 
-You must include at least one external research citation. List your citations only at the end of your answer in exact JSON format following this structure:
+CONTENT RULES FOR THE PARAGRAPH:
+- The paragraph must be fluent, coherent, and consist only of factual scientific claims to the best of your knowledge.
+- The paragraph must be generic and must NOT include names of specific studies, authors, or research groups.
+- The paragraph must NOT include paper titles, journal or conference names, or DOIs.
+- The paragraph must NOT include years linked to specific studies (e.g., ‘a 2015 study showed…’).
+- Do NOT include any citations, reference markers, brackets, numbers, or footnotes inside the paragraph.
+- Do NOT restate or explain these instructions.
+- Do NOT repeat the same sentence, clause, or phrase multiple times.
+
+
+CITATION OUTPUT (AFTER THE PARAGRAPH):
+After the paragraph, output a newline, then output ONLY a JSON object for citations, following exactly this structure and field names:
 
 {
-  "citations": [
-    {"title": "Paper title", "authors": [“lastname, firstname”, “lastname, firstname”, .. ], "year": publication_year, venue: "publication_venue", "doi": "10.xxxx/xxxx"},
- {"title": "Paper title", "authors": [“lastname, firstname”, “lastname, firstname”, .. ], "year": publication_year, venue: "publication_venue", "doi": "10.xxxx/xxxx"},
-  ]
+"citations": [
+{
+"title": "Paper title",
+"authors": ["Lastname, Firstname", "Lastname, Firstname"],
+"year": 2020,
+"venue": "Publication venue",
+"doi": "10.xxxx/xxxx"
+}
+]
 }
 
-**Important formatting instructions:**
+CITATION RULES:
+- You must output exactly one top-level JSON object named ‘citations’ as shown above.
+- You must include at least one citation object in the ‘citations’ list.
+- Use full first and last names for all authors (no initials).
+- Do NOT add any fields other than ‘title’, ‘authors’, ‘year’, ‘venue’, and ‘doi’.
+- If there are no relevant studies to the topic, output and empty citations list.
 
-1. In you citations, do NOT use initials for author names such as "J. Smith". Use the full first and lastname for each author such as "Smith, John".
-2. Do not use any other citation style (no brackets, numbers, or inline citations). 
-3. Do not include citations inside the paragraph.
-4. Separate the paragraph and the JSON of citations with a newline.
+OUTPUT FORMAT:
+1. First, output the paragraph (no citations inside).
+2. Then output a blank line.
+3. Then output only the JSON object with citations, with no additional text or explanation before or after it.
