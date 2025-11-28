@@ -21,6 +21,8 @@ def main():
     parser.add_argument("--max_new_tokens", type=int, default=512)
     parser.add_argument("--limit", type=int, default=None, help="Optional limit for testing")
     parser.add_argument("--apply_chat_template", action="store_true", default=False, help="Whether to format prompts with tokenizer.apply_chat_template() (default: False)")
+    parser.add_argument("--two_prompts", action="store_true", default=False, help="Whether to adapt a strategy of two follow-up prompts instead of only one.")
+    parser.add_argument("--citation_prompt_template", required=False, help="Path to .txt file with the citations prompt template in case a two-prompt strategy is adopted.")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -29,6 +31,11 @@ def main():
     with open(args.prompt_template, "r") as f:
         template_text = f.read().strip()
     template = Template(template_text)
+
+    if args.two_prompts:
+        with open(args.citation_prompt_template, "r") as f:
+            citation_template_text = f.read().strip()
+        citation_template = Template(citation_template_text)
 
     # -----------Load dataset from HF Hub------------
     print(f"Loading dataset {args.dataset_name} from HuggingFace Hub...")
@@ -57,13 +64,29 @@ def main():
         prompt = template.substitute(scientific_entity=entity, field=field)
 
         result = model.generate(prompt, max_new_tokens=args.max_new_tokens)
-        record = {
+        
+        if args.two_prompts:
+            citation_prompt = template.substitute(paragraph=result)
+            citation_result = model.generate(citation_prompt, max_new_tokens=args.max_new_tokens)
+
+            record = {
             "id": i,
             "field": field,
             "entity": entity,
+            "two_prompts": args.two_prompts,
+            "output": result,
+            "output_citation": citation_result
+        }
+            
+        else:
+            record = {
+            "id": i,
+            "field": field,
+            "entity": entity,
+            "two_prompts": args.two_prompts,
             "output": result,
         }
-
+            
         fout.write(json.dumps(record) + "\n")
         fout.flush()
 
