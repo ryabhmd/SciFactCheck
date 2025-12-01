@@ -24,6 +24,7 @@ from tqdm import tqdm
 from model_evaluator import ModelEvaluator
 from collections import defaultdict
 from statistics import mean, stdev
+from prep_file_veriscore import clean_model_output
 
 class EvaluationRunner:
     """
@@ -71,6 +72,7 @@ class EvaluationRunner:
 
                 if eval_type == "ovr-uncertainty":
                     text = record["output"]["text"]
+                    text = clean_model_output(text)
                     mean_cert, aspect_scores = self.evaluator.get_uncertainty_estimations(text)
                     if mean_cert != None:
                         mean_cert = float(mean_cert)
