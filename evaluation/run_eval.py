@@ -27,6 +27,7 @@ if __name__ == "__main__":
     parser.add_argument("--file", required=True)
     parser.add_argument("--save", required=True)
     parser.add_argument("--eval", nargs="+", required=True)
+    parser.add_argument("--parse_citations", action="store_true", default=False, help="Pass if parsing citations is needed.")
     args = parser.parse_args()
 
     input_path = Path(args.file)
@@ -40,7 +41,7 @@ if __name__ == "__main__":
     print(f"Evaluated file path: {evaluated_path}")
     print(f"Summary file path: {summary_path}")
 
-    runner = EvaluationRunner(args.model_name, args.file, output_path=evaluated_path)
+    runner = EvaluationRunner(args.model_name, args.file, args.parse_citations, output_path=evaluated_path)
     runner.run(args.eval)
     runner.save()
     runner.save_summary_evaluations(args.eval, summary_path)

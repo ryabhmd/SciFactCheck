@@ -28,6 +28,8 @@ import requests
 import re
 import time
 import string
+import unicodedata
+from rapidfuzz import fuzz, process
 
 import pandas as pd
 from collections import defaultdict
@@ -205,136 +207,168 @@ class ModelEvaluator:
 
 
     # -------------------- Evaluation methods: ATTR -------------------- 
-    # Code adapted from https://github.com/AbhilashaRavichander/HALoGEN/blob/main/src/scientific_attribution.py 
 
-    def _query_semantic_scholar(self, title):
-       """
-       Query the Semantic Scholar API for a given title.
-       Args:
-       - title (str): The title to query.
-       
-       Returns:
-       - str: The title of the paper returned by the API, or an empty string if not found.
-       """
-       base_url = "https://api.semanticscholar.org/graph/v1/paper/"
-       
-       if not title or not isinstance(title, str):
-          return None
-       
-       query_title = '+'.join(title.split())
-       url = f"{base_url}search?query={query_title}&fields=url"
-       
-       time.sleep(1)  # Delay to avoid hitting rate limits
-       response = requests.get(url)
-       
-       if response.status_code == 200:
-          title_search_results = response.json()
-          if 'data' in title_search_results and title_search_results['data']:
-             paper_id = title_search_results['data'][0]['paperId']
-             paper_url = f"{base_url}{paper_id}"
-             
-             retry_count = 0
-             while retry_count < 3:
-                 paper_response = requests.get(paper_url)
-                 if paper_response.status_code == 200:
-                     data = paper_response.json()
-                     return data.get('title', '')
-                 
-                 elif paper_response.status_code == 429:
-                    retry_count += 1
-                    time.sleep(5)
-                
-                 else:
-                     return ''
-    
-       return ''
-    
-    def extract_citations(self, llm_output: str):
+    ## ------------------- parse + extract citations -------------------
+
+    def split_citations(self, text):
         """
-        Extracts the citations JSON block from an LLM output formatted according to the prompt template.
-        **Note: if the JSON is not well-structured and cannot be read, the function will return None, and the sample will not be included in the evaluation.
-
-        Args:
-        llm_output (str): The model output that includes a JSON block of citations.
-        Returns:
-        list[dict] | None: The list of citations if correctly formatted, otherwise None.
+        Splits citations separated by semicolons OR numbered list format.
         """
-        # Match a JSON block starting with {"citations": [...]}
-        match = re.search(r'\{\s*"citations"\s*:\s*\[.*?\]\s*\}', llm_output, re.DOTALL | re.IGNORECASE)
+        # Case 1: semicolon-separated citations
+        if ";" in text:
+            parts = [c.strip() for c in text.split(";") if c.strip()]
+            return parts
         
-        if not match:
-            return None
-        
-        json_str = match.group(0)
-        
-        try:
-            parsed = json.loads(json_str)
-            citations = parsed.get("citations", None)
-
-            # Ensure every citation has a "title" key
-            if not all(isinstance(c, dict) and "title" in c for c in citations):
-                return None
-            
-            # Return only if it's a list
-            if isinstance(citations, list):
-                return citations
-            else:
-                return None
+        # Case 2: numbered list
+        numbered = re.split(r"\n?\s*\d+\.\s+", text)
+        numbered = [c.strip() for c in numbered if c.strip()]
+        return numbered
     
-        except json.JSONDecodeError as e:
-            print("Error parsing citations JSON:", e)
-            return None
-        
-    def _clean_text(self, text):
-        
-        if not isinstance(text, str) or text is None:
+    def parse_citation(self, citation):
+        """
+        Parse a single APA citation into components.
+        Returns dict with authors, year, title, venue, doi
+        """
+
+        parsed = {
+            "authors": None,
+            "year": None,
+            "title": None,
+            "venue": None,
+            "doi": None
+        }
+
+        # --- DOI ---
+        doi_match = re.search(r"(10\.\d{4,9}/[-._;()/:A-Za-z0-9]+)", citation)
+        if doi_match:
+            parsed["doi"] = doi_match.group(1)
+            # Remove DOI from text to avoid interference
+            citation = citation.replace(doi_match.group(1), "")
+
+        # --- Authors + Year ---
+        # Pattern: Authors (Year). Title...
+        # Authors: everything before '(' followed by 4-digit year
+        m = re.match(r"^(.*?)\s*\((\d{4})\)\.?\s*(.*)$", citation)
+        if not m:
+            return parsed  # can't parse well; return what we have
+
+        authors, year, remainder = m.groups()
+        parsed["authors"] = authors.strip().rstrip(".")  # TODO: parse authors consistently
+        parsed["year"] = year
+
+        # --- Title + Venue ---
+        # Titles end at first period followed by space and capital letter
+        # Example: "Use of X. Journal Name"
+        title_venue_match = re.match(r"^(.*?)\.\s+(.*)$", remainder)
+        if title_venue_match:
+            parsed["title"] = title_venue_match.group(1).strip()
+            parsed["venue"] = title_venue_match.group(2).strip()
+        else:
+            # If no period found, entire remainder is title (e.g., books)
+            parsed["title"] = remainder.strip()
+            parsed["venue"] = None
+
+        return parsed
+    
+    def parse_apa_list(self, text):
+        citations = self.split_citations(text)
+        results = [self.parse_citation(c) for c in citations]
+        results = [r for r in results if r is not None]
+        for citation in results:
+            # check if all values in citation are None
+            if all(value is None for value in citation.values()):
+                results.remove(citation)
+        # remove None from results
+        return results
+    
+    ## ------------------- validate citations -------------------
+
+    def normalize_title(self, text):
+        if not text:
             return ""
-        return text.translate(str.maketrans('', '', string.punctuation)).strip().lower()
+
+        # Normalize unicode accents
+        text = unicodedata.normalize("NFKD", text)
+        text = "".join(c for c in text if not unicodedata.combining(c))
+
+        # Lowercase
+        text = text.lower()
+
+        # Replace unicode dashes with normal hyphen
+        text = re.sub(r"[–—−]", "-", text)
+
+        # Remove punctuation
+        text = re.sub(r"[^\w\s-]", "", text)
+
+        # Collapse whitespace
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
     
-    def process_attribution_hallucinations(self, llm_output):
+    def title_similarity(self, a, b):
         """
-        Given an output from an LLM, the function:
-        1. extracts citations
-        2. goes through them and for each one queries S2ORC based on title and saves the results
-        3. checks if the citation from the LLM matches the one returned by S2ORC after cleaning
-        
-        Returns:
-        - score: the number of hallucinated citations divided by the overall number of citations given by the LLM (percentage)
+        Returns fuzzy ration score (between 0 and 100).
         """
-        
-        citations = self.extract_citations(llm_output)
-        if citations is None or len(citations) == 0:
-            return None
-        
-        hallucinated_citations = 0
-        
-        for citation in tqdm(citations, desc="Verifying citations against S2ORC"):
-            s2orc_title = self._query_semantic_scholar(title=citation['title'])
-            if self._clean_text(citation['title']) != self._clean_text(s2orc_title):
-                hallucinated_citations += 1      
-                
-        score = hallucinated_citations / len(citations) * 100
-        return score
+        a_norm = self.normalize_title(a)
+        b_norm = self.normalize_title(b)
+
+        return fuzz.ratio(a_norm, b_norm)
     
-    def collect_attr_by_field(self, data):
+    def lookup_title_openalex(self, title, min_score=85):
         """
-        Goes over data samples (i.e. LLM outputs) and generates report of attribution hallucination score per field. 
+        Search for a paper title using OpenAlex with fuzzy matching.
         """
-        field_attr = defaultdict(list)
-        
-        for record in tqdm(data, desc="Processing outputs"):
-            text = record["output"]["text"]
-            field = record["field"]
-            attr_score = self.process_attribution_hallucinations(text)
-            if field and attr_score is not None:
-                field_attr[field].append(attr_score)
-                
-        # Print summary
-        print("=== ATTR-score summary by field ===")
-        for field, values in field_attr.items():
-            print(f"{field:20s} | {len(values):3d} samples | mean = {mean(values):.8f}")
-            
-        return dict(field_attr)
+
+        # Query OpenAlex
+        url = "https://api.openalex.org/works"
+        params = {
+            "search": title,
+            "per-page": 25,
+        }
+
+        try:
+            r = requests.get(url, params=params, timeout=10)
+            r.raise_for_status()
+            results = r.json().get("results", [])
+        except Exception as e:
+            return {"exists": False, "error": str(e)}
+
+        if not results:
+            return {
+                "exists": False,
+                "score": 0,
+                "openalex_id": None,
+                "doi": None,
+                "best_title": None,
+                "metadata": None,
+            }
+
+        # Extract and normalize candidate titles
+        candidate_titles = [res["title"] for res in results if "title" in res]
+
+        # Use enhanced similarity scoring for each candidate
+        best_score = -1
+        best_title = None
+        best_match = None
+
+        for cand, match_obj in zip(candidate_titles, results):
+            score = self.title_similarity(title, cand)
+
+            if score > best_score:
+                best_score = score
+                best_title = cand
+                best_match = match_obj
+
+        exists = best_score >= min_score
+
+        return {
+            "exists": exists,
+            "score": best_score,
+            "openalex_id": best_match["id"] if exists else None,
+            "doi": best_match.get("doi") if exists else None,
+            "best_title": best_title if exists else None,
+            "metadata": best_match if exists else None,
+        }
+
 
     # -------------------- Save / export --------------------
 

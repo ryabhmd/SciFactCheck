@@ -34,12 +34,14 @@ class EvaluationRunner:
     and the evaluation logic in ModelEvaluator.
     """
      
-    def __init__(self, model_name, file_path, output_path):
+    def __init__(self, model_name, file_path, parse_citations, output_path):
         self.model_name = model_name
         self.file_path = file_path
+        self.parse_citations = parse_citations
+        self.output_path = output_path
+
         self.data = self._load_jsonl(file_path)
         self.evaluator = ModelEvaluator(model_name, data=self.data)
-        self.output_path = output_path
         print(f"Loaded {len(self.data)} records for model {self.model_name}")
 
     @staticmethod
@@ -82,12 +84,30 @@ class EvaluationRunner:
                     }
 
                 elif eval_type == "attr":
-                    text = record["output"]["text"]
-                    score = self.evaluator.process_attribution_hallucinations(text)
-                    print(score)
-                    print(type(score))
-                    record["eval_attr"] = {"attr_score": score}
+                    if self.parse_citations:
+                        citation_text = record["output_citation"]["text"]
 
+                        parsed_citations = self.evaluator.parse_apa_list(citation_text)
+                        record["output_citation"]["parsed_citations"] = parsed_citations
+                    
+                    else:
+                        try:
+                            parsed_citations = record["output_citation"]["parsed_citations"]
+                        except Exception as e:
+                            raise RuntimeError(
+                                f"Your data does not contain parsed citations. Pass the --parse_citations argument to include it in the pipeline.\n")
+
+                    # check citations against OpenAlex
+                    for idx, citation in enumerate(parsed_citations):
+                        validation_result = self.evaluator.lookup_title_openalex(citation["title"], min_score=85)
+                        if validation_result["exists"]:
+                            # TODO validate authors, venue, DOI
+                            print("Citation found in OpenAlex!")
+                        
+                        record["output_citation"]["parsed_citations"][idx]["validation_result"] = validation_result
+                    
+                    # TODO add a score for each prompt 
+                    
             self.save()
 
         print("Done evaluating samples!")
@@ -101,7 +121,7 @@ class EvaluationRunner:
         2. Returns a dictionary containing the summary per field with the mean score, stdev, and number of collected samples.
         """
         
-        field_attr = defaultdict(list)
+        field_attr = defaultdict(list) 
         
         for record in tqdm(self.data, desc="Processing outputs"):
             field = record["field"]
