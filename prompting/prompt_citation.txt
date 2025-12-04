@@ -1,0 +1,10 @@
+Find relevant scientific or academic references in APA format that support the information presented in the following paragraph:
+$paragraph 
+
+Use semicolons as seperators, and list each APA reference without additional information.
+
+Examples of APA formatted references:
+Tang, F. & Pierce J.W. (2014). Alzheimer's disease in young adults. Journal on Aging, 14(3), 220-243.; Iosua, S. L. (2017). Individual proximity, complex and coordinated collective movement. Journal of Comparative Psychology, 123(6), 126–134. https://doi.org/10.1167/com0000274 
+
+** Note that complete citations MUST include author names, year of publication, title of publication, and publisher name**.
+
