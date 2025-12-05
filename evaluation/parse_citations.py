@@ -1,9 +1,9 @@
 import argparse
 import re
-import requests
 import json
 from hashlib import md5
 from pathlib import Path
+import unicodedata
 
 def clean_citation_text(text: str, remove_italics=True,
                         strip_doi_fragments=True) -> str:
