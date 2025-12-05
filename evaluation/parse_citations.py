@@ -5,6 +5,37 @@ import json
 from hashlib import md5
 from pathlib import Path
 
+def clean_citation_text(text: str, remove_italics=True,
+                        strip_doi_fragments=True) -> str:
+    """
+    Cleans citation text for titles or venues.
+
+    Parameters allow specialization:
+      - remove_italics: remove Markdown/APA italics (*...*)
+      - strip_doi_fragments: remove https://doi.org/ prefix but keep DOI numbers
+    """
+    if not text:
+        return text
+
+    t = text
+
+    # Normalize unicode first
+    t = unicodedata.normalize("NFKC", t)
+
+    # Remove italics markers (*, **)
+    if remove_italics:
+        t = re.sub(r"\*+", "", t)
+
+    # Remove bare DOI prefixes like https://doi.org/ but keep actual DOI number
+    if strip_doi_fragments:
+        t = re.sub(r"https?://doi\.org/?", "", t, flags=re.IGNORECASE)
+        t = re.sub(r"\bdoi:\s*", "", t, flags=re.IGNORECASE)
+
+    # Collapse whitespace
+    t = re.sub(r"\s+", " ", t).strip()
+
+    return t
+
 def split_citations(text):
     """
     Split citations separated by semicolons, numbers, or bullet points (*,-,•).
@@ -57,7 +88,7 @@ def parse_citation(citation):
 
         parsed["doi"] = found_doi
         citation = citation.replace(found_doi, "")
-
+    
     # --- Authors + Year ---
     # Accept:
     # (2014), (350 B.C.), (350 BC), (50 A.D.), (50 AD)
@@ -77,6 +108,7 @@ def parse_citation(citation):
     else:                               # Normal year
         parsed["year"] = year_num
 
+
     # --- Title + Venue ---
     title_venue_match = re.match(r"^(.*?)\.\s+(.*)$", remainder)
     if title_venue_match:
@@ -85,6 +117,19 @@ def parse_citation(citation):
     else:
         parsed["title"] = remainder.strip()
         parsed["venue"] = None
+        
+    if parsed["title"]:
+      parsed["title"] = clean_citation_text(
+          parsed["title"],
+          remove_italics=True,
+          )
+
+    if parsed["venue"]:
+      parsed["venue"] = clean_citation_text(
+          parsed["venue"],
+          remove_italics=True,
+          strip_doi_fragments=True
+          )
 
     # OPTIONAL: Ignore some titles (your previous logic)
     if parsed['title'] and parsed['title'].lower() in [
