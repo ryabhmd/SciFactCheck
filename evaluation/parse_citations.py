@@ -48,8 +48,15 @@ def parse_citation(citation):
     # --- DOI ---
     doi_match = re.search(r"(10\.\d{4,9}/[-._;()/:A-Za-z0-9]+)", citation)
     if doi_match:
-        parsed["doi"] = doi_match.group(1)
-        citation = citation.replace(doi_match.group(1), "")
+        found_doi = doi_match.group(1).strip()
+        # Ignore DOI that is part of prompt examples 
+        if found_doi.lower() in {
+            "10.1167/com0000274"
+        }:
+            return None
+
+        parsed["doi"] = found_doi
+        citation = citation.replace(found_doi, "")
 
     # --- Authors + Year ---
     # Accept:
