@@ -7,14 +7,26 @@ from pathlib import Path
 
 def split_citations(text):
     """
-    Splits citations separated by semicolons OR numbered list format.
+    Split citations separated by semicolons, numbers, or bullet points (*,-,•).
     """
-    # Case 1: semicolon-separated citations
+
+    # 1) Strip HTML links like <https://doi.org/...>
+    text = re.sub(r"<https?://[^>]+>", "", text)
+
+    # 2) Try semicolon-separated citations
     if ";" in text:
         parts = [c.strip() for c in text.split(";") if c.strip()]
         return parts
 
-    # Case 2: numbered list
+    # 3) Try bullet-point list (*, -, •)
+    bullet_pattern = r"(?:\n|\r|^)\s*[*\-•]\s+"
+    if re.search(bullet_pattern, text):
+        # Split on the bullet, clean whitespace
+        parts = re.split(bullet_pattern, text)
+        parts = [p.strip() for p in parts if p.strip()]
+        return parts
+
+    # 4) Try numbered list (1., 2., etc.)
     numbered = re.split(r"\n?\s*\d+\.\s+", text)
     numbered = [c.strip() for c in numbered if c.strip()]
     return numbered
