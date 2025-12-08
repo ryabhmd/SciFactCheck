@@ -24,6 +24,8 @@ def main():
     parser.add_argument("--apply_chat_template", action="store_true", default=False, help="Whether to format prompts with tokenizer.apply_chat_template() (default: False)")
     parser.add_argument("--two_prompts", action="store_true", default=False, help="Whether to adapt a strategy of two follow-up prompts instead of only one.")
     parser.add_argument("--citation_prompt_template", required=False, help="Path to .txt file with the citations prompt template in case a two-prompt strategy is adopted.")
+    parser.add_argument("--from_checkpoint", action="store_true", default=False, help="Whether to continue prompting from a specific checkpoint of the dataset instead of from scratch. If chosen, the argument --checkpoint_path should be passed.")
+    parser.add_argument("--checkpoint_path", help="If continuing prompting from a checkpoint, denote the path to load the data from.")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -52,13 +54,30 @@ def main():
         model = LiteLLMModel(args.model_name, api_key=args.litellm_api_key)
 
     # ----------Output setup-------------
-    output_path = os.path.join(
-        args.output_dir, f"{args.model_name.replace('/', '_')}_results.jsonl"
-    )
+    # If checkpoint is given, continue from last element
+    if args.from_checkpoint:
+        input_data = []
+        with open(args.checkpoint_path, "r") as f:
+            for line in f:
+                if line.strip():
+                    input_data.append(json.loads(line))
+        # overwrite saved data
+        output_path = args.checkpoint_path
+        checkpoint_index = input_data[-1]["id"]
+        
+    # Otherwise, start from scratch    
+    else:
+        output_path = os.path.join(
+            args.output_dir, f"{args.model_name.replace('/', '_')}_results.jsonl"
+        )
+         # in case no checkpoint is given, to start prompting loop from 0
+        checkpoint_index = -1
+        
     fout = open(output_path, "w")
+       
 
     # ----------Run generation loop-------------
-    for i, row in enumerate(tqdm(dataset['train'], desc="Prompting entities")):
+    for i, row in enumerate(tqdm(dataset['train'], desc="Prompting entities"), start=checkpoint_index+1):
         entity = row.get("scientific_entity")
         field = row.get("field")
 
