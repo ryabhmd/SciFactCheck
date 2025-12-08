@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import argparse
 from datasets import load_dataset
@@ -66,7 +67,12 @@ def main():
         result = model.generate(prompt, max_new_tokens=args.max_new_tokens)
         
         if args.two_prompts:
-            citation_prompt = citation_template.substitute(paragraph=result["text"])
+            paragraph_result = result["text"]
+            # remove <think> boxes in the paragraph so they are not included in the citation prompt
+            if "<think>" in paragraph_result:
+                paragraph_result = re.sub(r"<think>.*?</think>", "", paragraph_result, flags=re.DOTALL)
+                
+            citation_prompt = citation_template.substitute(paragraph=paragraph_result)
             citation_result = model.generate(citation_prompt, max_new_tokens=args.max_new_tokens)
 
             record = {
