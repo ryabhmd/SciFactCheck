@@ -11,8 +11,7 @@ Main functionalities based on factuality hallucination type:
 -- Logprob evaluation: compute and summarize model confidence by field.
 -- Linguistic uncertainty estimation: quantify certainty in generated text using a pretrained `CertaintyEstimator` model.
 
-2. ATTR: check if cited papers are valid using the Semantic Scholar API.
-
+2. ATTR: check if cited papers are valid.
 
 - Utility methods for reading, saving, and aggregating results.
 
@@ -207,81 +206,7 @@ class ModelEvaluator:
 
 
     # -------------------- Evaluation methods: ATTR -------------------- 
-
-    ## ------------------- parse + extract citations -------------------
-
-    def split_citations(self, text):
-        """
-        Splits citations separated by semicolons OR numbered list format.
-        """
-        # Case 1: semicolon-separated citations
-        if ";" in text:
-            parts = [c.strip() for c in text.split(";") if c.strip()]
-            return parts
-        
-        # Case 2: numbered list
-        numbered = re.split(r"\n?\s*\d+\.\s+", text)
-        numbered = [c.strip() for c in numbered if c.strip()]
-        return numbered
-    
-    def parse_citation(self, citation):
-        """
-        Parse a single APA citation into components.
-        Returns dict with authors, year, title, venue, doi
-        """
-
-        parsed = {
-            "authors": None,
-            "year": None,
-            "title": None,
-            "venue": None,
-            "doi": None
-        }
-
-        # --- DOI ---
-        doi_match = re.search(r"(10\.\d{4,9}/[-._;()/:A-Za-z0-9]+)", citation)
-        if doi_match:
-            parsed["doi"] = doi_match.group(1)
-            # Remove DOI from text to avoid interference
-            citation = citation.replace(doi_match.group(1), "")
-
-        # --- Authors + Year ---
-        # Pattern: Authors (Year). Title...
-        # Authors: everything before '(' followed by 4-digit year
-        m = re.match(r"^(.*?)\s*\((\d{4})\)\.?\s*(.*)$", citation)
-        if not m:
-            return parsed  # can't parse well; return what we have
-
-        authors, year, remainder = m.groups()
-        parsed["authors"] = authors.strip().rstrip(".")  # TODO: parse authors consistently
-        parsed["year"] = year
-
-        # --- Title + Venue ---
-        # Titles end at first period followed by space and capital letter
-        # Example: "Use of X. Journal Name"
-        title_venue_match = re.match(r"^(.*?)\.\s+(.*)$", remainder)
-        if title_venue_match:
-            parsed["title"] = title_venue_match.group(1).strip()
-            parsed["venue"] = title_venue_match.group(2).strip()
-        else:
-            # If no period found, entire remainder is title (e.g., books)
-            parsed["title"] = remainder.strip()
-            parsed["venue"] = None
-
-        return parsed
-    
-    def parse_apa_list(self, text):
-        citations = self.split_citations(text)
-        results = [self.parse_citation(c) for c in citations]
-        results = [r for r in results if r is not None]
-        for citation in results:
-            # check if all values in citation are None
-            if all(value is None for value in citation.values()):
-                results.remove(citation)
-        # remove None from results
-        return results
-    
-    ## ------------------- validate citations -------------------
+    # Assumes the citations are already parsed using the parse_citations module.
 
     def normalize_title(self, text):
         if not text:

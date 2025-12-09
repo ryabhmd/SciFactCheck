@@ -25,6 +25,7 @@ from model_evaluator import ModelEvaluator
 from collections import defaultdict
 from statistics import mean, stdev
 from prep_file_veriscore import clean_model_output
+from parse_citations import CitationParser
 
 class EvaluationRunner:
     """
@@ -85,9 +86,10 @@ class EvaluationRunner:
 
                 elif eval_type == "attr":
                     if self.parse_citations:
+                        citation_parser = CitationParser()
                         citation_text = record["output_citation"]["text"]
 
-                        parsed_citations = self.evaluator.parse_apa_list(citation_text)
+                        parsed_citations = citation_parser.parse_apa_list(citation_text)
                         record["output_citation"]["parsed_citations"] = parsed_citations
                     
                     else:
