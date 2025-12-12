@@ -78,6 +78,7 @@ class CitationParser:
         - Bullet lists (*, -, •)
         - Numbered lists (1., 2., etc.)
         - Removal of <https://doi.org/...> link elements
+        - Split based on newlines
 
         Parameters
         - text : str
@@ -87,21 +88,63 @@ class CitationParser:
         - list[str]
             A list of raw citation strings.
         """
-        text = re.sub(r"<https?://[^>]+>", "", text)  # remove links
+        # Remove <https://...> style angle-bracket links
+        text = re.sub(r"<https?://[^>]+>", "", text).strip()
 
-        # Try semicolon-separated citations
-        if ";" in text:
-            return [c.strip() for c in text.split(";") if c.strip()]
-
-        # Bullet list (*, -, •)
+        parts = [text]
+        
+        # --- 1. Semicolon splitting ---
+        new_parts = []
+        for p in parts:
+            if ";" in p:
+                new_parts.extend([c.strip() for c in p.split(";") if c.strip()])
+            else:
+                new_parts.append(p)
+        parts = new_parts
+        
+        # --- 2. Bullet list splitting ---
         bullet_pattern = r"(?:\n|\r|^)\s*[*\-•]\s+"
-        if re.search(bullet_pattern, text):
-            parts = re.split(bullet_pattern, text)
-            return [p.strip() for p in parts if p.strip()]
-
-        # Numbered list (1., 2., etc.)
-        numbered = re.split(r"\n?\s*\d+\.\s+", text)
-        return [c.strip() for c in numbered if c.strip()]
+        new_parts = []
+        for p in parts:
+            if re.search(bullet_pattern, p):
+                new_parts.extend([c.strip() for c in re.split(bullet_pattern, p) if c.strip()])
+            else:
+                new_parts.append(p)
+        parts = new_parts
+        
+        # --- 3. Numbered list splitting ---
+        new_parts = []
+        for p in parts:
+            split_num = re.split(r"\n?\s*\d+\.\s+", p)
+            if len(split_num) > 1:
+                new_parts.extend([c.strip() for c in split_num if c.strip()])
+            else:
+                new_parts.append(p)
+        parts = new_parts
+        
+        # --- 4. Newline splitting ---
+        final_parts = []
+        for p in parts:
+            final_parts.extend([c.strip() for c in re.split(r"\n+", p) if c.strip()])
+            
+        # --- 5. Merge DOI-only lines into the previous citation ---
+        merged = []
+        doi_regex = re.compile(r"^(https?://doi\.org/)?(10\.\d{4,9}/[-._;()/:A-Za-z0-9]+)$", re.I)
+        for chunk in final_parts:
+            if doi_regex.match(chunk):
+                # Attach DOI to the previous chunk
+                if merged:
+                    merged[-1] = merged[-1].rstrip(".") + ". " + chunk
+                else:
+                    # if DOI appears first (unlikely), just append normally
+                    merged.append(chunk)
+            else:
+                merged.append(chunk)
+        
+        # Remove tiny noisy fragments
+        merged = [m for m in merged if len(m) > 3]
+        
+        return merged
 
     # -------------------------------------------------------
     # Core parser
@@ -204,6 +247,10 @@ class CitationParser:
         - list[dict]
             List of parsed citation dictionaries.
         """
+        # If <think> opens but doesn't close → return empty list
+        if "<think>" in text and "</think>" not in text:
+            return []
+
         # Remove <think>...</think> blocks
         text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
          
