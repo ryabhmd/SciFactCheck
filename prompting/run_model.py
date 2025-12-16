@@ -67,6 +67,7 @@ def main():
         output_path = os.path.join(
             args.output_dir, f"{args.model_name.replace('/', '_')}_results_checkpoint_{checkpoint_index}.jsonl"
         )
+        data = dataset['train'].select(range(checkpoint_index+1, len(dataset['train'])))
         
     # Otherwise, start from scratch    
     else:
@@ -75,18 +76,15 @@ def main():
         )
          # in case no checkpoint is given, to start prompting loop from 0
         checkpoint_index = -1
+        data = dataset['train']
         
     fout = open(output_path, "w")
        
 
     # ----------Run generation loop-------------
-    for i, row in enumerate(tqdm(dataset['train'], desc="Prompting entities"), start=checkpoint_index+1):
-
-        print(i)
-
+    for i, row in enumerate(tqdm(data, desc="Prompting entities"), start=checkpoint_index+1):
         entity = row.get("scientific_entity")
         field = row.get("field")
-        print(entity)
 
         prompt = template.substitute(scientific_entity=entity, field=field)
 
