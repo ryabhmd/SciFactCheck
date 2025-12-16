@@ -56,14 +56,17 @@ def main():
     # ----------Output setup-------------
     # If checkpoint is given, continue from last element
     if args.from_checkpoint:
+        print(f"Loading data from checkpoint {args.checkpoint_path}")
         input_data = []
         with open(args.checkpoint_path, "r") as f:
             for line in f:
                 if line.strip():
                     input_data.append(json.loads(line))
-        # overwrite saved data
-        output_path = args.checkpoint_path
+        # create output path
         checkpoint_index = input_data[-1]["id"]
+        output_path = os.path.join(
+            args.output_dir, f"{args.model_name.replace('/', '_')}_results_checkpoint_{checkpoint_index}.jsonl"
+        )
         
     # Otherwise, start from scratch    
     else:
@@ -78,8 +81,12 @@ def main():
 
     # ----------Run generation loop-------------
     for i, row in enumerate(tqdm(dataset['train'], desc="Prompting entities"), start=checkpoint_index+1):
+
+        print(i)
+
         entity = row.get("scientific_entity")
         field = row.get("field")
+        print(entity)
 
         prompt = template.substitute(scientific_entity=entity, field=field)
 
