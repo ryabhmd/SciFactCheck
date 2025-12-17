@@ -79,7 +79,7 @@ def main(args):
     # Save subset of not matched excluding Arts and Humanities
     subset = merged_data[merged_data["field"] != "Arts and Humanities"]
     subset_missing = subset[subset["matched"] == False]
-    subset_missing.to_csv(os.path.join(save_path, f"not_mathed_{timestamp}.csv"), index=False)
+    subset_missing.to_csv(os.path.join(save_path, f"not_matched_{timestamp}.csv"), index=False)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
