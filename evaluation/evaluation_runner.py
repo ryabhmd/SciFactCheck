@@ -100,6 +100,7 @@ class EvaluationRunner:
                                 f"Your data does not contain parsed citations. Pass the --parse_citations argument to include it in the pipeline.\n")
 
                     # check citations against OpenAlex
+                    """
                     for idx, citation in enumerate(parsed_citations):
                         validation_result = self.evaluator.lookup_title_openalex(citation["title"], min_score=85)
                         if validation_result["exists"]:
@@ -107,7 +108,7 @@ class EvaluationRunner:
                             print("Citation found in OpenAlex!")
                         
                         record["output_citation"]["parsed_citations"][idx]["validation_result"] = validation_result
-                    
+                    """
                     # TODO add a score for each prompt 
                     
             self.save()
