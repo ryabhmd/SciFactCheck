@@ -239,14 +239,12 @@ class vLLMModel(BaseModelInterface):
         trust_remote_code: bool = False,
         seed: int = 0,
         is_chat: bool = False,
-        system_prompt: str = "You are a helpful assistant.",
         return_logprobs: bool = True,
     ):
         from vllm import LLM
 
         self.model_name = model_name
         self.is_chat = is_chat
-        self.system_prompt = system_prompt
         self.return_logprobs = return_logprobs
 
         self.llm = LLM(
@@ -263,9 +261,8 @@ class vLLMModel(BaseModelInterface):
 
     def _build_chat_prompt(self, user_prompt: str):
         return [
-            {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": user_prompt},
-        ]
+            ]
 
     def generate(
         self,
