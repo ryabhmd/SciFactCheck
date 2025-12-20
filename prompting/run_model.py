@@ -3,7 +3,7 @@ import re
 import json
 import argparse
 from datasets import load_dataset
-from model_interface import HFModel, LiteLLMModel
+from model_interface import HFModel, LiteLLMModel, vLLMModel
 from dotenv import load_dotenv
 from tqdm import tqdm 
 from string import Template
@@ -13,7 +13,8 @@ load_dotenv()
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", required=True)
-    parser.add_argument("--model_type", choices=["hf", "litellm"], required=True)
+    parser.add_argument("--model_type", choices=["hf", "litellm", "vllm"], required=True)
+    parser.add_argument("--tensor_parallel_size", type=int, default=1, help="Number of tensor parallel partitions in case on vLLM.")
     parser.add_argument("--dataset_name", required=True, help="HuggingFace dataset identifier, e.g. 'username/dataset_name'")
     parser.add_argument("--prompt_template", required=True, help="Path to .txt file with prompt template (use {scientific_entity} and {field} placeholders)")
     parser.add_argument("--output_dir", default="results/")
@@ -47,11 +48,29 @@ def main():
         dataset = dataset.select(range(args.limit))
     print(f"Loaded {len(dataset)} samples.")
 
-    # -----------Initialize model------------
+    # ----------- Initialize model ------------
     if args.model_type == "hf":
-        model = HFModel(args.model_name, api_key=args.hf_api_key, force_download=True, apply_chat_template=args.apply_chat_template)
-    else:
-        model = LiteLLMModel(args.model_name, api_key=args.litellm_api_key)
+        model = HFModel(
+            args.model_name,
+            api_key=args.hf_api_key,
+            force_download=True,
+            apply_chat_template=args.apply_chat_template,
+        )
+        
+    elif args.model_type == "litellm":
+        model = LiteLLMModel(
+            args.model_name,
+            api_key=args.litellm_api_key,
+            )
+        
+    elif args.model_type == "vllm":
+        model = vLLMModel(
+            model_name=args.model_name,
+            tensor_parallel_size=args.tensor_parallel_size,
+            trust_remote_code=args.trust_remote_code,
+            is_chat=args.apply_chat_template,
+            return_logprobs=True,           
+            )     
 
     # ----------Output setup-------------
     # If checkpoint is given, continue from last element
@@ -79,7 +98,6 @@ def main():
         data = dataset['train']
         
     fout = open(output_path, "w")
-       
 
     # ----------Run generation loop-------------
     for i, row in enumerate(tqdm(data, desc="Prompting entities"), start=checkpoint_index+1):

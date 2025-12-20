@@ -228,7 +228,109 @@ class LiteLLMModel(BaseModelInterface):
                 "num_tokens": len(logprobs) if logprobs else None,
             },
         }
+    
+class vLLMModel(BaseModelInterface):
+    """Local vLLM model wrapper with chat templating and logprobs."""
 
+    def __init__(
+        self,
+        model_name: str,
+        tensor_parallel_size: int = 1,
+        trust_remote_code: bool = False,
+        seed: int = 0,
+        is_chat: bool = False,
+        system_prompt: str = "You are a helpful assistant.",
+        return_logprobs: bool = True,
+    ):
+        from vllm import LLM
+
+        self.model_name = model_name
+        self.is_chat = is_chat
+        self.system_prompt = system_prompt
+        self.return_logprobs = return_logprobs
+
+        self.llm = LLM(
+            model=model_name,
+            tensor_parallel_size=tensor_parallel_size,
+            trust_remote_code=trust_remote_code,
+            seed=seed,
+        )
+
+        logging.info(
+            f"Loaded vLLM model: {model_name} "
+            f"(tp={tensor_parallel_size}, chat={is_chat}, logprobs={return_logprobs})"
+        )
+
+    def _build_chat_prompt(self, user_prompt: str):
+        return [
+            {"role": "system", "content": self.system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+    def generate(
+        self,
+        prompt: str,
+        max_new_tokens: int = 512,
+        temperature: float = 0.3,
+        top_p: float = 1.0,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        from vllm import SamplingParams
+
+        sampling_params = SamplingParams(
+            temperature=temperature,
+            top_p=top_p,
+            max_tokens=max_new_tokens,
+            logprobs=1 if self.return_logprobs else None,
+        )
+
+        # ---------------------------
+        # Generate
+        # ---------------------------
+        if self.is_chat:
+            conversation = self._build_chat_prompt(prompt)
+            outputs = self.llm.chat(
+                conversation,
+                sampling_params=sampling_params,
+                use_tqdm=False,
+            )
+            used_prompt = conversation
+        else:
+            outputs = self.llm.generate(
+                prompt,
+                sampling_params=sampling_params,
+            )
+            used_prompt = prompt
+
+        output = outputs[0].outputs[0]
+        generated_text = output.text
+
+        # ---------------------------
+        # Extract logprobs
+        # ---------------------------
+        logprobs = None
+        length_norm_logprob = None
+
+        if self.return_logprobs and output.logprobs:
+            logprobs = []
+            for token_lp in output.logprobs:
+                # token_lp is {token_id: logprob}
+                logprobs.append(next(iter(token_lp.values())))
+
+            if logprobs:
+                length_norm_logprob = sum(logprobs) / len(logprobs)
+
+        return {
+            "prompt": used_prompt,
+            "text": generated_text,
+            "logprobs": logprobs,
+            "length_norm_logprob": length_norm_logprob,
+            "meta": {
+                "model": self.model_name,
+                "backend": "vllm",
+                "num_tokens": len(output.token_ids),
+            },
+        }
 
 # ---------- Model Manager ----------
 class ModelManager:
