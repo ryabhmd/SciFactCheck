@@ -260,7 +260,7 @@ class vLLMModel(BaseModelInterface):
         )
 
     def _build_chat_prompt(self, user_prompt: str):
-        return [
+        return  [
             {"role": "user", "content": user_prompt},
             ]
 
@@ -293,9 +293,13 @@ class vLLMModel(BaseModelInterface):
             )
             used_prompt = conversation
         else:
+            if "tulu" in self.model_name:
+                prompt = ("<|user|>\n" + prompt + "<|assistant|>\n")
+
             outputs = self.llm.generate(
                 prompt,
                 sampling_params=sampling_params,
+                use_tqdm=False,
             )
             used_prompt = prompt
 
@@ -311,8 +315,14 @@ class vLLMModel(BaseModelInterface):
         if self.return_logprobs and output.logprobs:
             logprobs = []
             for token_lp in output.logprobs:
-                # token_lp is {token_id: logprob}
-                logprobs.append(next(iter(token_lp.values())))
+                # token_lp is a dict where values are Logprob objects
+                logprob_obj = next(iter(token_lp.values()))
+
+                # Check if it's an object (vLLM >= 0.4.x) or just a float
+                if hasattr(logprob_obj, 'logprob'):
+                    logprobs.append(logprob_obj.logprob)
+                else:
+                    logprobs.append(logprob_obj)
 
             if logprobs:
                 length_norm_logprob = sum(logprobs) / len(logprobs)

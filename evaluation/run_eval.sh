@@ -22,10 +22,10 @@ mkdir -p $LOGS_DIR
 mkdir -p $RESULTS_DIR
 
 # Model + evaluation setup
-export MODEL_NAME="OpenDFM/SciDFM-MoE-A5.6B-v1.0"
-export INPUT_FILE="$INPUT_DIR/OpenDFM_SciDFM-MoE-A5.6B-v1.0_results.jsonl"
+export MODEL_NAME="ScienceOne-AI/S1-Base-32B"
+export INPUT_FILE="$INPUT_DIR/ScienceOne-AI_S1-Base-32B_results_combined_checkpoints.jsonl"
 export OUTPUT_FILE="$RESULTS_DIR"
-export EVAL_TYPES="ovr-logprobs ovr-uncertainty attr"
+export EVAL_TYPES="attr ovr-logprobs ovr-uncertainty"
 
 # Optional: API keys (read from env vars or .env file)
 export HF_TOKEN="your_huggingface_token_here"
@@ -46,7 +46,9 @@ CMD=(python run_eval.py
 	--model_name "$MODEL_NAME"
 	--file "$INPUT_FILE"
 	--save "$OUTPUT_FILE"
-	--eval $EVAL_TYPES)
+	--eval $EVAL_TYPES
+	--parse_citations
+	)
 
 # --- Logging setup ---
 OUT_FILE=${LOG_DIR}/${JOB_NAME}_$(date +"%Y%m%d_%H%M%S").out

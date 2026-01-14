@@ -67,7 +67,7 @@ def main():
         model = vLLMModel(
             model_name=args.model_name,
             tensor_parallel_size=args.tensor_parallel_size,
-            trust_remote_code=args.trust_remote_code,
+            trust_remote_code=True,
             is_chat=args.apply_chat_template,
             return_logprobs=True,           
             )     

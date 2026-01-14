@@ -14,17 +14,18 @@ export CUDA_DEVICE_ORDER="PCI_BUS_ID"
 export DEFAULT_PARTITION="H100,A100-40GB,A100-80GB"
 
 export ENROOT_IMAGE_DIR=/netscratch/abu/images
-export IMAGE=$ENROOT_IMAGE_DIR/scifactcheck_prompting_qwen3_update.sqsh
+export IMAGE=$ENROOT_IMAGE_DIR/scifactcheck_prompting.sqsh
 # Weights & Biases
 export WANDB_PROJECT=$PROJECT
 
 # === Model + Dataset parameters ===
-MODEL_NAME=${MODEL_NAME:-"Qwen/Qwen3-8B"}
+MODEL_NAME=${MODEL_NAME:-"/ds/models/llms/llama2/llama-2-70b-chat"}
 MODEL_TYPE=${MODEL_TYPE:-hf}
 DATASET_NAME=${DATASET_NAME:-"rabuahmad/scifactcheck"}
-PROMPT_TEMPLATE=${PROMPT_TEMPLATE:-"${BASE_DIR}/prompt_template.txt"}
+PROMPT_TEMPLATE=${PROMPT_TEMPLATE:-"${BASE_DIR}/prompt_paragraph.txt"}
+CITE_PROMPT_TEMPLATE=${CITE_PROMPT_TEMPLATE:-"${BASE_DIR}/prompt_citation.txt"}
 OUTPUT_DIR=${OUTPUT_DIR:-"${BASE_DIR}/results"}
-MAX_NEW_TOKENS=${MAX_NEW_TOKENS:-512}
+MAX_NEW_TOKENS=${MAX_NEW_TOKENS:-1024}
 LIMIT=${LIMIT:-0}  # 0 means no limit
 
 # === API Keys ===
@@ -39,7 +40,7 @@ mkdir -p ${LOG_DIR}
 # === Default SLURM container settings ===
 export SLURM_MEM=${SLURM_MEM:-128G}
 export SLURM_CPUS=${SLURM_CPUS:-4}
-export ANY_PARTITION=${ANY_PARTITION:-H100,A100-40GB,A100-80GB,A100-PCI}
+export ANY_PARTITION=${ANY_PARTITION:-RTXA6000,V100-32GB,H100,A100-40GB,A100-80GB,A100-PCI,RTXA6000-SLT,RTX3090}
 
 export SRUN="srun -K \
   --job-name=${JOB_NAME}\
@@ -48,6 +49,7 @@ export SRUN="srun -K \
   --container-image=$IMAGE \
   --ntasks=1 --nodes=1 \
   -p ${ANY_PARTITION} --gpus=1 \
+  --time 01-00:00:00 \
   --cpus-per-gpu=${SLURM_CPUS} \
   --mem=${SLURM_MEM} \
   --export ALL"
@@ -59,7 +61,11 @@ CMD=(python3 run_model.py
 	--dataset_name "$DATASET_NAME"
 	--prompt_template "$PROMPT_TEMPLATE"
 	--output_dir "$OUTPUT_DIR"
-		  )
+	--max_new_tokens "$MAX_NEW_TOKENS"
+	--apply_chat_template
+	--two_prompts
+	--citation_prompt_template "$CITE_PROMPT_TEMPLATE"
+)
 
 # Optional limit argument
 if [[ $LIMIT -gt 0 ]]; then
@@ -88,7 +94,7 @@ echo "Logs: ${OUT_FILE}"
      nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv,noheader 2>/dev/null || true
      sleep 120
   done
-) &
+i) &
 HEARTBEAT_PID=$!
 
 # --- Run job and stream logs ---
