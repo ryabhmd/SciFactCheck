@@ -33,20 +33,25 @@ def main(args):
     df = pd.read_pickle(data_path)
     iep = df[df["field"] == "Arts and Humanities"]
 
-    for idx, row in iep.iterrows():
+    for _, row in iep.iterrows():
         url = row["text_url"]
         title = row["title"].replace(" ", "_")
         idx = row.name
+        filename = os.path.join(output_dir, f"{idx}_{title}.html")
+
+        if os.path.exists(filename):
+            print(f"Skipping {filename}, already exists)")
+            continue
+
         result, error = scrape_iep_article(url)
         if result:
-            filename = f"../data/iep_articles/{idx}_{title}.html"
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(result)
             print(f"Saved: {filename}")
         else:
             error_log.append({"idx": idx, "url": url, "error": error})
             print(f"Error at {idx}: {error}")
-        time.sleep(60)
+        time.sleep(30)
 
     if error_log:
         log_df = pd.DataFrame(error_log)
