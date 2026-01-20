@@ -6,6 +6,7 @@ import time
 import os
 import argparse
 import pandas as pd
+import re
 
 
 def scrape_iep_article(url: str) -> tuple:
@@ -22,6 +23,10 @@ def scrape_iep_article(url: str) -> tuple:
         return None, f"parse_error: {e}"
 
 
+def clean_title(name: str) -> str:
+    return re.sub(r'[<>:"/\\|?*,.()]', "", name)
+
+
 def main(args):
     output_dir = args.output_path
     log_path = args.log_path
@@ -35,7 +40,7 @@ def main(args):
 
     for _, row in iep.iterrows():
         url = row["text_url"]
-        title = row["title"].replace(" ", "_")
+        title = clean_title(row["title"].replace(" ", "_"))
         idx = row.name
         filename = os.path.join(output_dir, f"{idx}_{title}.html")
 
