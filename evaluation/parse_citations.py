@@ -22,6 +22,12 @@ from pathlib import Path
 from statistics import mean, median
 import unicodedata
 
+DOI_EXTRACT_RE = re.compile(
+    r"(?:https?://(?:dx\.)?doi\.org/|doi:\s*)?(10\.\d{4,9}/[^\s<>\"']+)",
+    re.IGNORECASE,
+)
+DOI_TRAILING_PUNCT = ").,;:]>}\"'"
+
 class CitationParser:
 
     def __init__(self, remove_italics=True, strip_doi_fragments=True):
@@ -63,7 +69,33 @@ class CitationParser:
             t = re.sub(r"https?://doi\.org/?", "", t, flags=re.IGNORECASE)
             t = re.sub(r"\bdoi:\s*", "", t, flags=re.IGNORECASE)
 
-        return re.sub(r"\s+", " ", t).strip()
+        t = re.sub(r"\s+", " ", t).strip()
+        t = t.strip("\"'")
+        return t.strip()
+
+    def clean_doi(self, value: str) -> str:
+        raw = value.strip().replace("\u200b", "").replace("\ufeff", "")
+        raw = raw.strip("<>\"'").lower()
+        raw = re.sub(r"^(?:urn:)?doi\s*[:/]\s*", "", raw, flags=re.IGNORECASE)
+        raw = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", raw, flags=re.IGNORECASE)
+        raw = raw.rstrip(DOI_TRAILING_PUNCT).strip()
+        return raw
+
+    def _extract_year(self, text: str):
+        match = re.search(r"\b(19|20)\d{2}\b", text)
+        return match.group(0) if match else None
+
+    def _looks_like_author(self, text: str) -> bool:
+        lowered = text.lower()
+        if "et al" in lowered:
+            return True
+        if "&" in text or " and " in lowered:
+            return True
+        if re.search(r"\b[A-Z]\.", text):
+            return True
+        if "," in text and re.search(r"\b[A-Z][a-z]+", text):
+            return True
+        return False
 
     # -------------------------------------------------------
     # Splitting utilities
@@ -90,9 +122,42 @@ class CitationParser:
         """
         # Remove <https://...> style angle-bracket links
         text = re.sub(r"<https?://[^>]+>", "", text).strip()
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
 
-        parts = [text]
-        
+        # Insert a newline before inline list markers following a DOI or sentence end.
+        text = re.sub(
+            r"(10\.\d{4,9}/[^\s<>\"']+)\s+(\d+\.)\s+(?=[A-Z])",
+            r"\1\n\2 ",
+            text,
+        )
+        text = re.sub(
+            r"([\.!?])\s+(\d+\.)\s+(?=[A-Z])",
+            r"\1\n\2 ",
+            text,
+        )
+
+        # --- 0. List marker splitting (inline numbered/bulleted) ---
+        list_marker = re.compile(r"(?m)^\s*(?:\d+\.|[*\-•])\s+")
+        matches = list(list_marker.finditer(text))
+        if matches:
+            items = []
+            for idx, match in enumerate(matches):
+                start = match.end()
+                end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
+                chunk = text[start:end].strip()
+                if chunk:
+                    items.append(chunk)
+            parts = items
+        else:
+            # Drop leading non-citation text if an APA-like pattern exists later.
+            m = re.search(r"\b[A-Z][^\\n]{0,120}\(\s*\d{4}", text)
+            if m:
+                text = text[m.start():].strip()
+            parts = [text]
+
+        # --- 0.1 Collapse internal newline into spaces ---
+        parts = [re.sub(r"\s*\n\s*", " ", p).strip() for p in parts if p.strip()]
+
         # --- 1. Semicolon splitting ---
         new_parts = []
         for p in parts:
@@ -101,37 +166,12 @@ class CitationParser:
             else:
                 new_parts.append(p)
         parts = new_parts
-        
-        # --- 2. Bullet list splitting ---
-        bullet_pattern = r"(?:\n|\r|^)\s*[*\-•]\s+"
-        new_parts = []
-        for p in parts:
-            if re.search(bullet_pattern, p):
-                new_parts.extend([c.strip() for c in re.split(bullet_pattern, p) if c.strip()])
-            else:
-                new_parts.append(p)
-        parts = new_parts
-        
-        # --- 3. Numbered list splitting ---
-        new_parts = []
-        for p in parts:
-            split_num = re.split(r"\n?\s*\d+\.\s+", p)
-            if len(split_num) > 1:
-                new_parts.extend([c.strip() for c in split_num if c.strip()])
-            else:
-                new_parts.append(p)
-        parts = new_parts
-        
-        # --- 4. Newline splitting ---
-        final_parts = []
-        for p in parts:
-            final_parts.extend([c.strip() for c in re.split(r"\n+", p) if c.strip()])
-            
+
         # --- 5. Merge DOI-only lines into the previous citation ---
         merged = []
-        doi_regex = re.compile(r"^(https?://doi\.org/)?(10\.\d{4,9}/[-._;()/:A-Za-z0-9]+)$", re.I)
-        for chunk in final_parts:
-            if doi_regex.match(chunk):
+        doi_only = re.compile(r"^(https?://(?:dx\.)?doi\.org/)?10\.\d{4,9}/\S+$", re.I)
+        for chunk in parts:
+            if doi_only.match(chunk):
                 # Attach DOI to the previous chunk
                 if merged:
                     merged[-1] = merged[-1].rstrip(".") + ". " + chunk
@@ -142,9 +182,7 @@ class CitationParser:
                 merged.append(chunk)
         
         # Remove tiny noisy fragments
-        merged = [m for m in merged if len(m) > 3]
-        
-        return merged
+        return [m for m in merged if len(m) > 3]
 
     # -------------------------------------------------------
     # Core parser
@@ -178,22 +216,50 @@ class CitationParser:
         }
 
         # --- DOI ---
-        doi_match = re.search(r"(10\.\d{4,9}/[-._;()/:A-Za-z0-9]+)", citation)
+        doi_match = DOI_EXTRACT_RE.search(citation)
         if doi_match:
-            found_doi = doi_match.group(1).strip()
+            found_doi = self.clean_doi(doi_match.group(1))
             if found_doi.lower() in {"10.1167/com0000274"}:  # ignore
                 return None
             parsed["doi"] = found_doi
-            citation = citation.replace(found_doi, "")
+            citation = citation[:doi_match.start()] + citation[doi_match.end():]
 
         # --- Authors + Year ---
         year_pattern = r"^\s*(.*?)\s*\(\s*([0-9]{1,4})\s*(B\.?C\.?|A\.?D\.?)?\s*\)\.?\s*(.*)$"
-        m = re.match(year_pattern, citation, flags=re.IGNORECASE)
+
+        def try_match(text: str):
+            return re.match(year_pattern, text, flags=re.IGNORECASE)
+
+        m = try_match(citation)
         if not m:
+            # we try to strip leading labels like "Topic: Author (Year)..."
+            for sep in (":", "–", "—", "-"):
+                if sep in citation:
+                    tail = citation.split(sep, 1)[-1].strip()
+                    m = try_match(tail)
+                if m:
+                    citation = tail
+                    break
+        if not m:
+            #find the first apparent author+year pattern inside the string
+            anchor = re.search(
+                r"[A-Z][^\n]{0,200}\(\s*[0-9]{4}\s*(?:B\.?C\.?|A\.?D\.?)?\s*\)",
+                citation,
+                flags=re.IGNORECASE,
+            )
+            if anchor:
+                tail = citation[anchor.start():].lstrip(" \t-–—:•")
+                m = try_match(tail)
+                if m:
+                    citation = tail
+        if not m:
+            fallback = self.parse_non_apa(citation)
+            if fallback:
+                parsed.update({k: v for k, v in fallback.items() if v})
             return parsed
 
         authors, year_num, era, remainder = m.groups()
-        parsed["authors"] = authors.strip().rstrip(".")
+        parsed["authors"] = authors.strip().lstrip("*-•").strip().rstrip(".")
 
         # Normalize year
         if era and "B" in era.upper():
@@ -226,6 +292,81 @@ class CitationParser:
 
         return parsed
 
+    def parse_non_apa(self, citation: str):
+        text = citation.strip()
+        if not text:
+            return None
+
+        text = text.replace("\u201c", "\"").replace("\u201d", "\"")
+
+        # Pattern: Journal, (Year of publication). Title.
+        m = re.match(
+            r"^\s*([^,]+)\s*,\s*\((?:year of publication|n\.?d\.?|\d{4})\)\.\s*([^\.]+)",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if m:
+            venue = self.clean_citation_text(m.group(1))
+            title = self.clean_citation_text(m.group(2))
+            year = self._extract_year(text)
+            return {
+                "authors": None,
+                "year": year,
+                "title": title,
+                "venue": venue,
+            }
+
+        # Pattern: (no author listed) (Year...). Title. Venue,...
+        m = re.match(
+            r"^\s*\(?\s*no author listed\s*\)?\s*\((?:year of publication|n\.?d\.?|\d{4})\)\.\s*([^\.]+)\.\s*([^\.]+)",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if m:
+            title = self.clean_citation_text(m.group(1))
+            venue = self.clean_citation_text(m.group(2))
+            year = self._extract_year(text)
+            return {
+                "authors": None,
+                "year": year,
+                "title": title,
+                "venue": venue,
+            }
+
+        # Pattern: Authors, "Title," Venue, ...
+        # we allow the comma to appear inside the quotes or after
+        m = re.match(
+            r"^\s*(?:(?P<authors>[^\"']+?)\s*,\s*)?[\"'](?P<title>.+?)[\"']\s*,?\s*(?P<venue>[^,]+)",
+            text,
+        )
+        if m:
+            authors = m.group("authors")
+            title = m.group("title").rstrip(" ,;")
+            venue = m.group("venue")
+            year = self._extract_year(text)
+            return {
+                "authors": authors.strip().rstrip(".") if authors else None,
+                "year": year,
+                "title": self.clean_citation_text(title),
+                "venue": self.clean_citation_text(venue),
+            }
+
+        # Pattern:  Authors, Title, Venue, ... year ...
+        m = re.match(
+            r"^\s*(?P<authors>[^,]+?)\s*,\s*(?P<title>[^,]+?)\s*,\s*(?P<venue>[^,]+)",
+            text,
+        )
+        if m and self._looks_like_author(m.group("authors")):
+            year = self._extract_year(text)
+            return {
+                "authors": m.group("authors").strip().rstrip("."),
+                "year": year,
+                "title": self.clean_citation_text(m.group("title")),
+                "venue": self.clean_citation_text(m.group("venue")),
+            }
+
+        return None
+
     # -------------------------------------------------------
     # Batch parsing (per one model response)
     # -------------------------------------------------------
@@ -255,7 +396,14 @@ class CitationParser:
         text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
          
         citations = self.split_citations(text)
-        citations = list(set(citations))  # remove duplicate raw strings
+        # remove duplicate raw strings
+        unique_citations, seen = [], set()
+        for c in citations:
+            key = c.strip()
+            if key and key not in seen:
+                seen.add(key)
+                unique_citations.append(c)
+        citations = unique_citations
 
         results = [self.parse_citation(c) for c in citations]
         results = [r for r in results if r is not None]
