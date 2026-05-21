@@ -18,7 +18,12 @@
 
 1. OpenFActScore (OFS)
 
-2. VeriScore
+   - Code for preparing survey papers for KB construction is under data_prep
+   - Link to forked repo
+
+3. VeriScore
+
+   - Link to forked repo
 
 ### Overclaim Hallucinations
 
