@@ -40,15 +40,35 @@ python prompting/run_model.py \
     --output <path_to_output_jsonl>
 ```
 
-**Expected output format** (`output.jsonl`): one record per concept per model:
+**Sample output format**: one record per concept per model would look like this:
 ```json
 {
-    "concept_id": 0,
+    "id": 0,
+    "field": "Engineering"
     "entity": "nanofluids",
-    "field": "Engineering",
-    "model": "Qwen/Qwen2.5-7B-Instruct",
-    "response": "...",
-    "citations": ["...", "..."]
+    "two_prompts": true,
+    "output": {
+        "prompt": "Scientific claims are those that [...]",
+        "text": "Nanofluids are engineered colloidal suspensions that [...]",
+        "logprobs": [...],
+        "length_norm_logprob": -0.6522063442125952,
+    }
+    "meta": {
+        "model": "openai/gpt-4o-mini",
+        "backend": "litellm",
+        "num_tokens": 249,
+    }
+    "output_citation": {
+        "prompt": "Find relevant scientific or academic [...]",
+        "text": "Hassan, H. A., & Badran, M. A. (2016). [...]",
+        "logprobs": [...],
+        "length_norm_logprob": -219.88604030781042,
+        "meta": {
+            "model": "openai/gpt-4o-mini",
+            "backend": "litellm",
+            "num_tokens": 319
+        }
+    }
 }
 ```
 
