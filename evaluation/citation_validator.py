@@ -10,7 +10,7 @@ from urllib.parse import quote
 
 import requests
 
-DEFAULT_USER_AGENT = "raia-citation-validator/0.1 (mailto:nikolas.rauscher@dfki.de)"
+DEFAULT_USER_AGENT = ""
 MIN_TITLE_SCORE = 0.8
 EXCLUDED_TITLE_PHRASES = {
     "alzheimer s disease in young adults",
