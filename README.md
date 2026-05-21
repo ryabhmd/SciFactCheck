@@ -148,12 +148,6 @@ Two complementary uncertainty proxies are computed:
 - **Linguistic uncertainty** (certainty estimator): sentence-level certainty scores
 - **Parametric uncertainty** (log probabilities): length-normalized mean per-token log probability
 
-```bash
-python evaluation/run_eval.py \
-    --task ovr \
-    --input <path_to_responses_jsonl> \
-    --output <path_to_results_dir>
-```
 
 ### 3.3 Attribution Hallucination (ATR)
 
@@ -162,10 +156,39 @@ A citation is deemed valid if either strategy confirms it.
 
 - **CrossRef validator:** `evaluation/citation_validator.py`
 
+OVR and ATR metrics can be run directly using `evaluation/run_eval.py`.
+
+### Basic usage
+
 ```bash
 python evaluation/run_eval.py \
-    --task atr \
-    --input <path_to_responses_jsonl> \
-    --output <path_to_results_dir>
+    --model_name Qwen/Qwen2.5-7B-Instruct \
+    --file results/Qwen_Qwen2.5-7B-Instruct.jsonl \
+    --save results/eval/ \
+    --eval ovr-uncertainty ovr-logprobs attr
 ```
+
+### With citation parsing
+
+If your model output contains raw citation strings that need to be parsed 
+before ATR evaluation, add `--parse_citations`:
+
+```bash
+python evaluation/run_eval.py \
+    --model_name Qwen/Qwen2.5-7B-Instruct \
+    --file results/Qwen_Qwen2.5-7B-Instruct.jsonl \
+    --save results/eval/ \
+    --eval atr \
+    --parse_citations
+```
+
+### All arguments
+
+| Argument | Required | Default | Description |
+|---|---|---|---|
+| `--model_name` | ✓ | — | Model name or HuggingFace path |
+| `--file` | ✓ | — | Path to model output JSONL file |
+| `--save` | ✓ | — | Directory to save evaluation results |
+| `--eval` | ✓ | — | One or more metrics to evaluate: `ovr-uncertainty` (linguistic uncertainty), `ovr-logprobs` (parametric uncertainty), `attr` (attribution validation) |
+| `--parse_citations` | | `False` | Parse raw citation strings before ATR evaluation |
 
