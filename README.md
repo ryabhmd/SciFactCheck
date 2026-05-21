@@ -11,6 +11,8 @@
 - Paragraph generation prompt template: prompting/prompt_paragraph.txt
 - Citation generation prompt template: prompting/prompt_citation.txt
 - Model inference framework is under prompting/run_model.py; connects to three platforms: HF, LiteLLM, vLLM
+     - Add possible args
+     - Add expected output format
 
 ## Evaluation Framework
 
@@ -27,5 +29,12 @@
 
 ### Overclaim Hallucinations
 
+- logprobs and ling. certainty code is under: evaluation/model_evaluator.py
+
 ### Attribution Hallucinations
 
+- CrossRef validator: evaluation/citation_validator.py
+
+Running both OVR + ATR can be directly done under evaluation/run_eval.py
+- Add args
+- Add expected output
