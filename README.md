@@ -1,40 +1,97 @@
 # SciFactCheck
 
-## Creating the Benchmark
+SciFactCheck is a benchmark and evaluation framework for assessing scientific factuality hallucinations in open-ended, closed-book LLM-generated text across five scientific domains: Engineering, Life Sciences, Physical Sciences and Mathematics, Social and Behavioural Sciences, and Arts and Humanities. The framework targets three hallucination types: unverifiability (VER), overclaim (OVR), and attribution (ATR), with dedicated automatic metrics per type. 
 
-- Survey paper retrieval is under data_prep/s2orc_api.py
-- IEP scraping is under data_prep/iep.py
-- Full data ==> upload here
+This repository contains the code for benchmark construction, model prompting, and evaluation.
 
-## Prompting Models
+## Repository Structure
 
-- Paragraph generation prompt template: prompting/prompt_paragraph.txt
-- Citation generation prompt template: prompting/prompt_citation.txt
-- Model inference framework is under prompting/run_model.py; connects to three platforms: HF, LiteLLM, vLLM
-     - Add possible args
-     - Add expected output format
+```
+SciFactCheck/
+├── data_prep/          # Benchmark construction + utils
+├── prompting/          # Model inference
+└── evaluation/         # Hallucination evaluation
+```
 
-## Evaluation Framework
+## 1. Benchmark Construction
 
-### Unverifiability Hallucinations
+The benchmark consists of 2,500 scientific concepts across five domains, grounded in peer-reviewed survey literature. Concepts are extracted semi-automatically from highly cited (>=100 citations) survey papers retrieved from S2ORC, and from the Internet Encyclopedia of Philosophy (IEP) for Arts and Humanities.
 
-1. OpenFActScore (OFS)
+- **S2ORC survey paper retrieval:** `data_prep/s2orc_api.py`
+- **IEP article scraping:** `data_prep/iep.py`
+- **Full dataset:** 
 
-   - Code for preparing survey papers for KB construction is under data_prep
-   - Link to forked repo
+## 2. Model Prompting
 
-3. VeriScore
+We use a two-step prompting strategy: first generating a scientific paragraph, then eliciting citations separately. 
 
-   - Link to forked repo
+- **Paragraph generation prompt:** `prompting/prompt_paragraph.txt`
+- **Citation generation prompt:** `prompting/prompt_citation.txt`
+- **Inference script:** `prompting/run_model.py`
 
-### Overclaim Hallucinations
+The inference script supports three backends: HuggingFace, LiteLLM, and vLLM:
 
-- logprobs and ling. certainty code is under: evaluation/model_evaluator.py
+```bash
+python prompting/run_model.py \
+    --model <model_name_or_path> \
+    --backend <hf|litelml|vllm> \
+    --prompt_template <path_to_template> \
+    --input <path_to_concepts_csv> \
+    --output <path_to_output_jsonl>
+```
 
-### Attribution Hallucinations
+**Expected output format** (`output.jsonl`): one record per concept per model:
+```json
+{
+    "concept_id": 0,
+    "entity": "nanofluids",
+    "field": "Engineering",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "response": "...",
+    "citations": ["...", "..."]
+}
+```
 
-- CrossRef validator: evaluation/citation_validator.py
+## 3. Evaluation Framework
 
-Running both OVR + ATR can be directly done under evaluation/run_eval.py
-- Add args
-- Add expected output
+### 3.1 Unverifiability Hallucination (VER)
+
+We use two metrics with different knowledge sources:
+
+**OpenFActScore (OFS)** verifies claims against the full text of the source survey paper.
+- KB construction code: `data_prep/prepare_ofs_kb.py`
+- We use a forked version of OpenFActScore: [link to fork]
+
+**VeriScore** verifies claims against Google Search results via the Serper API.
+- We use a forked version of VeriScore: [link to fork]
+
+Both metrics use VeriScore's claim extraction model for consistency.
+
+### 3.2 Overclaim Hallucination (OVR)
+
+Two complementary uncertainty proxies are computed:
+
+- **Linguistic uncertainty** (certainty estimator): sentence-level certainty scores
+- **Parametric uncertainty** (log probabilities): length-normalized mean per-token log probability
+
+```bash
+python evaluation/run_eval.py \
+    --task ovr \
+    --input <path_to_responses_jsonl> \
+    --output <path_to_results_dir>
+```
+
+### 3.3 Attribution Hallucination (ATR)
+
+Citations are verified against CrossRef using DOI-based and title-based lookup.
+A citation is deemed valid if either strategy confirms it.
+
+- **CrossRef validator:** `evaluation/citation_validator.py`
+
+```bash
+python evaluation/run_eval.py \
+    --task atr \
+    --input <path_to_responses_jsonl> \
+    --output <path_to_results_dir>
+```
+
