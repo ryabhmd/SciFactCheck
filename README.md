@@ -29,16 +29,70 @@ We use a two-step prompting strategy: first generating a scientific paragraph, t
 - **Citation generation prompt:** `prompting/prompt_citation.txt`
 - **Inference script:** `prompting/run_model.py`
 
-The inference script supports three backends: HuggingFace, LiteLLM, and vLLM:
+The inference script supports three backends: HuggingFace (`hf`), LiteLLM (`litellm`), and vLLM (`vllm`). API keys can be passed as arguments or set as environment variables (`HF_API_KEY`, `LITELLM_API_KEY`).
+
+### Basic usage (single prompt)
 
 ```bash
 python prompting/run_model.py \
-    --model <model_name_or_path> \
-    --backend <hf|litelml|vllm> \
-    --prompt_template <path_to_template> \
-    --input <path_to_concepts_csv> \
-    --output <path_to_output_jsonl>
+    --model_name Qwen/Qwen2.5-7B-Instruct \
+    --model_type hf \
+    --dataset_name hf_dataset \
+    --prompt_template prompting/prompt_paragraph.txt \
+    --output_dir results/ \
+    --max_new_tokens 512 \
+    --apply_chat_template
 ```
+
+### Two-prompt strategy (paragraph + citations)
+
+```bash
+python prompting/run_model.py \
+    --model_name Qwen/Qwen2.5-7B-Instruct \
+    --model_type hf \
+    --dataset_name hf_dataset \
+    --prompt_template prompting/prompt_paragraph.txt \
+    --two_prompts \
+    --citation_prompt_template prompting/prompt_citation.txt \
+    --output_dir results/ \
+    --apply_chat_template
+```
+
+### Resuming from a checkpoint
+
+```bash
+python prompting/run_model.py \
+    --model_name Qwen/Qwen2.5-7B-Instruct \
+    --model_type vllm \
+    --tensor_parallel_size 4 \
+    --dataset_name hf_dataset \
+    --prompt_template prompting/prompt_paragraph.txt \
+    --two_prompts \
+    --citation_prompt_template prompting/prompt_citation.txt \
+    --from_checkpoint \
+    --checkpoint_path results/Qwen_Qwen2.5-7B-Instruct_checkpoint.jsonl \
+    --output_dir results/
+```
+
+### All arguments
+
+| Argument | Required | Default | Description |
+|---|---|---|---|
+| `--model_name` | ✓ | — | Model name or HuggingFace path |
+| `--model_type` | ✓ | — | Backend: `hf`, `litellm`, or `vllm` |
+| `--dataset_name` | ✓ | — | HuggingFace dataset identifier (SciFactCheck) |
+| `--prompt_template` | ✓ | — | Path to `.txt` prompt template; use `{scientific_entity}` and `{field}` as placeholders |
+| `--output_dir` | | `results/` | Directory to save outputs |
+| `--max_new_tokens` | | `512` | Maximum number of tokens to generate |
+| `--tensor_parallel_size` | | `1` | Number of tensor parallel partitions (vLLM only) |
+| `--apply_chat_template` | | `False` | Format prompts with `tokenizer.apply_chat_template()` |
+| `--two_prompts` | | `False` | Use two-prompt strategy (paragraph + citations) |
+| `--citation_prompt_template` | | — | Path to citation prompt template (required if `--two_prompts`) |
+| `--from_checkpoint` | | `False` | Resume from a previous checkpoint |
+| `--checkpoint_path` | | — | Path to checkpoint file (required if `--from_checkpoint`) |
+| `--limit` | | `None` | Limit number of examples (for testing) |
+| `--hf_api_key` | | `$HF_API_KEY` | HuggingFace API key |
+| `--litellm_api_key` | | `$LITELLM_API_KEY` | LiteLLM API key |
 
 **Sample output format**: one record per concept per model would look like this:
 ```json
