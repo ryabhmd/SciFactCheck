@@ -192,3 +192,53 @@ python evaluation/run_eval.py \
 | `--eval` | ✓ | — | One or more metrics to evaluate: `ovr-uncertainty` (linguistic uncertainty), `ovr-logprobs` (parametric uncertainty), `attr` (attribution validation) |
 | `--parse_citations` | | `False` | Parse raw citation strings before ATR evaluation |
 
+**Expected output format** (`results/<model_name>.jsonl`): one record per concept:
+```json
+{
+    "id": 0,
+    "field": "Engineering",
+    "entity": "nanofluids",
+    "two_prompts": true,
+    "output": {
+        "prompt": "...",
+        "text": "...",
+        "logprobs": [...],
+        "length_norm_logprob": -0.652,
+        "meta": {
+            "model": "openai/gpt-4o-mini",
+            "backend": "litellm",
+            "num_tokens": 249
+        }
+    },
+    "output_citation": {
+        "prompt": "...",
+        "text": "...",
+        "logprobs": [...],
+        "length_norm_logprob": -219.88,
+        "meta": {
+            "model": "openai/gpt-4o-mini",
+            "backend": "litellm",
+            "num_tokens": 319
+        },
+        "parsed_citations": [
+            {
+                "authors": "Choi, S. U. S., & Eastman, J. A",
+                "year": "1995",
+                ...
+            }
+        ]
+    },
+    "eval_logprobs": -0.652,
+    "eval_uncertainty": {
+        "mean_sentence_certainty": 4.77,
+        "aspect_scores": {
+            "Probability": 0.67,
+            "Number": 0.0,
+            "Extent": 0.0,
+            "Condition": null,
+            "Framing": 1.0,
+            "Suggestion": 1.0
+        }
+    }
+}
+```
