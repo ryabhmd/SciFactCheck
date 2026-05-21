@@ -192,7 +192,7 @@ python evaluation/run_eval.py \
 | `--eval` | ✓ | — | One or more metrics to evaluate: `ovr-uncertainty` (linguistic uncertainty), `ovr-logprobs` (parametric uncertainty), `attr` (attribution validation) |
 | `--parse_citations` | | `False` | Parse raw citation strings before ATR evaluation |
 
-**Expected output format** (`results/<model_name>.jsonl`): one record per concept:
+**Expected output format**: one record per concept:
 ```json
 {
     "id": 0,
