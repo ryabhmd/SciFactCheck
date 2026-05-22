@@ -137,7 +137,7 @@ We use two metrics with different knowledge sources:
 - We use a forked version of OpenFActScore: [link to fork]
 
 **VeriScore** verifies claims against Google Search results via the Serper API.
-- We use a forked version of VeriScore: [link to fork]
+- We use a forked version of VeriScore: https://anonymous.4open.science/r/VeriScore-4451
 
 Both metrics use VeriScore's claim extraction model for consistency.
 
