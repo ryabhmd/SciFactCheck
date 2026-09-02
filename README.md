@@ -19,7 +19,7 @@ The benchmark consists of 2,500 scientific concepts across five domains, grounde
 
 - **S2ORC survey paper retrieval:** `data_prep/s2orc_api.py`
 - **IEP article scraping:** `data_prep/iep.py`
-- **Full dataset:** `scifactcheck_data.csv`
+- **Full dataset:** `scifactcheck_data.csv`, also available on HuggingFace: https://huggingface.co/datasets/rabuahmad/scifactcheck 
 
 ## 2. Model Prompting
 
