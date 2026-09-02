@@ -37,7 +37,7 @@ The inference script supports three backends: HuggingFace (`hf`), LiteLLM (`lite
 python prompting/run_model.py \
     --model_name Qwen/Qwen2.5-7B-Instruct \
     --model_type hf \
-    --dataset_name hf_dataset \
+    --dataset_name rabuahmad/scifactcheck \
     --prompt_template prompting/prompt_paragraph.txt \
     --output_dir results/ \
     --max_new_tokens 512 \
@@ -50,7 +50,7 @@ python prompting/run_model.py \
 python prompting/run_model.py \
     --model_name Qwen/Qwen2.5-7B-Instruct \
     --model_type hf \
-    --dataset_name hf_dataset \
+    --dataset_name rabuahmad/scifactcheck \
     --prompt_template prompting/prompt_paragraph.txt \
     --two_prompts \
     --citation_prompt_template prompting/prompt_citation.txt \
@@ -65,7 +65,7 @@ python prompting/run_model.py \
     --model_name Qwen/Qwen2.5-7B-Instruct \
     --model_type vllm \
     --tensor_parallel_size 4 \
-    --dataset_name hf_dataset \
+    --dataset_name rabuahmad/scifactcheck \
     --prompt_template prompting/prompt_paragraph.txt \
     --two_prompts \
     --citation_prompt_template prompting/prompt_citation.txt \
