@@ -134,10 +134,10 @@ We use two metrics with different knowledge sources:
 
 **OpenFActScore (OFS)** verifies claims against the full text of the source survey paper.
 - KB construction code: `data_prep/prepare_ofs_kb.py`
-- We use a forked version of OpenFActScore: https://anonymous.4open.science/r/OpenFActScore-1D5B
+- We use a forked version of OpenFActScore: https://github.com/ryabhmd/OpenFActScore
 
 **VeriScore** verifies claims against Google Search results via the Serper API.
-- We use a forked version of VeriScore: https://anonymous.4open.science/r/VeriScore-4451
+- We use a forked version of VeriScore: https://github.com/ryabhmd/VeriScore
 
 Both metrics use VeriScore's claim extraction model for consistency.
 
