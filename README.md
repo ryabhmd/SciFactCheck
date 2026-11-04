@@ -242,3 +242,32 @@ python evaluation/run_eval.py \
     }
 }
 ```
+
+## Citation
+
+```
+@inproceedings{abu-ahmad-etal-2026-finetuning,
+    title = "Does Finetuning with Scientific Data Increase Hallucinations? A Multi-domain Factuality Evaluation of {LLM}s",
+    author = {Abu Ahmad, Raia  and
+      Rauscher, Nikolas  and
+      Borisova, Ekaterina  and
+      Barth, Fabio  and
+      Rehm, Georg  and
+      M{\"o}ller, Sebastian},
+    editor = "Lee, Hung-Yi  and
+      Dev, Sunipa  and
+      Li, Junyi Jessy  and
+      Elliott, Desmond",
+    booktitle = "Proceedings of the 2026 Conference on Empirical Methods in Natural Language Processing",
+    month = oct,
+    year = "2026",
+    address = "Budapest, Hungary",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2026.emnlp-main.610/",
+    doi = "10.18653/2026.emnlp-main.610",
+    pages = "14040--14064",
+    ISBN = "979-8-89176-459-0",
+    abstract = "Large language models (LLMs) are increasingly used to communicate and explain scientific concepts, yet their tendency to hallucinate poses significant risks in this high stakes use-case. Prior scientific hallucination evaluation work remains largely restricted to the biomedical domain, treats hallucination as a binary task, and has not examined the growing family of scientifically fine-tuned LLMs. We address these gaps with SciFactCheck, a benchmark of 2,500 prompts across five scientific domains, paired with a modular evaluation framework targeting three factuality hallucination types: unverifiability, overclaim, and attribution. Using a controlled minimal-pairing design, we evaluate 18 LLMs by comparing each scientifically fine-tuned model against its general-purpose base. Our results indicate that 1. Scientifically fine-tuned models exhibit degraded factual reliability across all hallucination types and scientific domains, and 2. Fine-tuned models are internally less confident yet linguistically more assertive. A human pilot study further reveals that current fact-checking tools show only modest agreement with expert judgments on scientific content, and that defining scientifically check-worthy claims remains contested even among human annotators. Our findings fundamentally challenge current methods of domain-specific fine-tuning for factuality and call for developing improved verification infrastructure for scientific content."
+}
+```
+
